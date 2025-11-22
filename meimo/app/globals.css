@@ -437,3 +437,32 @@ h1, h2, h3, h4, h5, h6 {
 @media (min-width: 769px) {
   .main-content { margin-left: 300px !important; }
 }
+
+.sidebar {
+  width: 300px !important; /* Paksa lebar di desktop */
+  position: fixed;
+  height: 100vh;
+  z-index: 1000; /* Pastikan selalu di depan */
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  background-color: white !important; /* Agar sidebar terlihat putih */
+}
+
+/* Paksa Margin Content Utama (Harus digeser 300px ke kanan di desktop) */
+.main-content {
+  margin-left: 300px !important; /* Paksa margin agar konten utama tidak overlap */
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+/* Fix Footer Color (Memastikan warna gelap muncul) */
+.footer {
+  background-color: var(--manado-dark-bg, #2a2a2a) !important;
+  color: #f8f9fa !important;
+}
+
+/* Fix Mobile Overrides (Agar di HP tidak ada margin) */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important;
+  }
+}

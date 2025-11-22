@@ -81,6 +81,7 @@ export default function OrderPage() {
   };
 
   
+ 
   // ✨ FETCH MENU DARI DATABASE (SEKALI SAJA SAAT LOAD)
  
   useEffect(() => {
@@ -124,8 +125,9 @@ export default function OrderPage() {
     fetchMenuFromDB();
   }, []);
 
+
   // ✨ FUNGSI KIRIM PESANAN (POST KE MONGODB)
- 
+
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0) {
       alert("Keranjang kosong!");

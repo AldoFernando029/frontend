@@ -1,12 +1,9 @@
-/* ==================================
-  GABUNGAN FINAL globals.css (Minimal & Anti-Conflict)
-==================================
-*/
+/* Final Consolidated Globals.css (Solusi untuk Layout dan Warna) */
 
 /* 1. Import Font */
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@700;900&display=swap');
 
-/* 2. Variabel & Global Styles */
+/* 2. Variabel Root (Global & Tema) */
 :root {
   --background: #ffffff;
   --foreground: #212529;
@@ -18,6 +15,7 @@
   --manado-dark-bg: #2a2a2a;
 }
 
+/* 3. Global Element Styles */
 body {
   background: var(--background);
   color: var(--foreground);
@@ -30,54 +28,70 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==================================
-3. Layout & Component Core Styles 
+5. Core Component Styles 
 ================================== */
 
-/* Sidebar (Order Page Desktop Fix) */
+/* Navbar */
+.navbar.fixed-top {
+  transition: background-color 0.3s ease-in-out, padding 0.3s ease-in-out;
+  background-color: transparent;
+  z-index: 9999 !important;
+}
+
+/* Menu Card Overrides */
+.menu-card {
+  transition: all 0.3s ease;
+  border-radius: 1.5rem; 
+  overflow: hidden; 
+}
+
+/* Sidebar & Main Content Base Fixes */
 .sidebar { 
-  width: 300px;
+  width: 300px !important; /* WAJIB fixed width di desktop */
   position: fixed;
   height: 100vh;
-  z-index: 1000;
-  background-color: white; 
+  z-index: 1000 !important; 
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  background-color: white !important; /* Agar sidebar terlihat putih */
   overflow-y: auto;
 }
 
 /* Main Content (Desktop Fix) */
 .main-content {
   /* Margin untuk menggeser konten utama di desktop */
-  margin-left: 300px; 
+  margin-left: 300px !important; 
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 
-/* Footer Color Fix */
+/* Footer (Final Color Fix) */
 .footer {
-  background-color: var(--manado-dark-bg); /* Warna gelap */
-  color: #f8f9fa; /* Teks putih */
+  /* Memaksa warna gelap untuk footer home page */
+  background-color: var(--manado-dark-bg, #2a2a2a) !important; 
+  color: #f8f9fa !important; /* Teks putih */
   padding: 4rem 0;
 }
 
-/* Menu Card Overrides */
-.menu-card {
-  border-radius: 1.5rem; 
-  overflow: hidden; 
-  transition: all 0.3s ease;
+.footer h5 {
+  color: var(--manado-gold);
 }
 
 /* ==================================
-4. Responsive Overrides (CRITICAL)
-================================== */
+8. Responsive Design Overrides (CRITICAL)
+================================= */
 
-/* Fix: Hapus Margin di HP & Sidebar Mobile Drawer */
 @media (max-width: 768px) {
-  /* Margin harus nol di HP */
+  /* FIX: Hapus Margin di HP */
   .main-content { 
     margin-left: 0 !important; 
   }
-  /* Sidebar di HP (untuk toggle) */
   .sidebar { 
-    width: 80%;
+    width: 80%; /* Lebar sidebar di HP lebih kecil */
     z-index: 1060;
   }
 }
-/* ---------------------------------------------------- */
+
+/* FIX: Ensure Desktop margin applies (Hanya di layar besar) */
+@media (min-width: 769px) {
+  .main-content { margin-left: 300px !important; }
+}

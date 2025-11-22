@@ -51,21 +51,34 @@ export default function Home() {
   const [loadingMenu, setLoadingMenu] = useState<boolean>(false);
   const [backgrounds, setBackgrounds] = useState<Background[]>([]);
 
-  // Ambil gambar background & menu dari backend API
+  // ============================================================
+  // BAGIAN INI YANG SAYA PERBAIKI (Fetch Data)
+  // ============================================================
   useEffect(() => {
     async function fetchData() {
       try {
-        const [bgRes, menuRes] = await Promise.all([
-          fetch("http://localhost:5000/api/backgrounds"),
-          fetch("http://localhost:5000/api/menus"),
-        ]);
+        // PERBAIKAN: Menggunakan path relative ("/api/...") bukan "http://localhost:5000"
+        // Ini supaya bisa jalan di Vercel (Serverless)
+        
+        // Kita fetch menu dulu karena ini yang paling penting
+        const menuRes = await fetch("/api/menus");
+        
+        // Coba fetch background (pakai catch biar kalau error ga bikin menu ikutan error)
+        const bgResPromise = fetch("/api/backgrounds").catch(() => null); 
+        const bgRes = await bgResPromise;
 
-        if (!bgRes.ok || !menuRes.ok) throw new Error("API response not ok");
+        if (!menuRes.ok) throw new Error("Gagal mengambil data menu");
 
-        const [bgData, menuData] = await Promise.all([
-          bgRes.json(),
-          menuRes.json(),
-        ]);
+        const menuData = await menuRes.json();
+        let bgData = [];
+
+        if (bgRes && bgRes.ok) {
+           try {
+             bgData = await bgRes.json();
+           } catch (e) {
+             console.log("Background API belum siap, pakai default.");
+           }
+        }
 
         // Gunakan data dari API
         if (Array.isArray(bgData) && bgData.length > 0) {
@@ -78,7 +91,8 @@ export default function Home() {
               ...m,
               name: m.nama || m.name,
               description: m.deskripsi || m.description || "",
-              imgSrc: m.gambar || m.imgSrc || "",
+              // Pastikan gambar diambil dari field yang benar
+              imgSrc: m.gambar || m.imgSrc || "/images/placeholder.jpg", 
               ratingStars: "★★★★☆",
               price: m.price || m.harga || 0,
             }))
@@ -92,6 +106,7 @@ export default function Home() {
     }
     fetchData();
   }, []);
+  // ============================================================
 
   // Slideshow background auto ganti tiap 5 detik
   useEffect(() => {
@@ -138,7 +153,7 @@ export default function Home() {
     );
   };
 
-  // Komentar - PERBAIKAN DI SINI
+  // Komentar
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;

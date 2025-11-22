@@ -8,11 +8,17 @@ import "bootstrap/dist/css/bootstrap.min.css";
 // 1. TIPE DATA
 interface MenuItem {
   _id?: string;
-  nama: string;
+  id?: string | number;
+  nama?: string;
+  name: string; // Field UI
   kategori: string;
-  harga: number;
-  deskripsi: string;
-  gambar: string;
+  category?: string;
+  harga?: number;
+  price: number; // Field UI
+  deskripsi?: string;
+  description: string; // Field UI
+  gambar?: string;
+  imgSrc: string; // Field UI
   ratingStars?: string;
   history?: string;
   ingredients?: string;
@@ -37,29 +43,31 @@ export default function OrderPage() {
   const [errorMenu, setErrorMenu] = useState<string>("");
 
   // ===============================================
-  // ✨ FETCH MENU DARI DATABASE (DENGAN POLLING OTOMATIS)
+  // ✨ FETCH MENU DARI DATABASE (SEKALI SAJA SAAT LOAD)
   // ===============================================
   useEffect(() => {
     async function fetchMenuFromDB() {
       try {
         setLoadingMenu(true);
-        
-        // PERBAIKAN 1: Hapus http://localhost:5000, ganti jadi path relative
+        // Panggil API Menu Internal
         const response = await fetch("/api/menus");
 
         if (!response.ok) {
-          throw new Error("Gagal mengambil data menu dari server");
+          throw new Error("Gagal mengambil data menu");
         }
 
         const data = await response.json();
 
+        // MAPPING DATA PENTING:
+        // Mengubah format Database (Indonesia) ke format UI (Inggris/Standard)
         const normalizedData = data.map((item: any) => ({
-          _id: item._id || item.id,
-          nama: item.nama || item.name || 'Menu Tanpa Nama',
+          _id: item._id,
+          id: item._id, // Fallback id
+          name: item.nama || item.name || 'Menu Tanpa Nama',
           kategori: item.kategori || item.category || 'Makanan Utama',
-          harga: item.harga || item.price || 0,
-          deskripsi: item.deskripsi || item.description || '',
-          gambar: item.gambar || item.image || item.imgSrc || '/images/placeholder.jpg',
+          price: item.harga || item.price || 0,
+          description: item.deskripsi || item.description || '',
+          imgSrc: item.gambar || item.imgSrc || '/images/placeholder.jpg',
           ratingStars: item.ratingStars || item.rating || '★★★★☆',
           history: item.history || item.sejarah || '',
           ingredients: item.ingredients || item.bahan || '',
@@ -70,26 +78,24 @@ export default function OrderPage() {
         setErrorMenu("");
       } catch (error) {
         console.error("Error fetching menu:", error);
-        setErrorMenu("Gagal memuat menu. Silakan refresh halaman.");
-        setMenuData([]);
+        setErrorMenu("Gagal memuat menu. Pastikan server berjalan.");
       } finally {
         setLoadingMenu(false);
       }
     }
 
     fetchMenuFromDB();
-    const intervalId = setInterval(fetchMenuFromDB, 5000);
-    return () => clearInterval(intervalId);
+    // TIDAK ADA setInterval DISINI (Agar tidak auto-refresh)
   }, []);
 
   // Hitung Total
   const totalItems = cartItems.reduce((acc, item) => acc + item.qty, 0);
-  const totalPrice = cartItems.reduce((acc, item) => acc + (item.harga * item.qty), 0);
+  const totalPrice = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
-  // Filter Menu
+  // Filter Menu berdasarkan Kategori & Search
   const filteredData = menuData.filter((item) => {
     const matchCategory = activeCategory === "Semua" || item.kategori === activeCategory;
-    const matchSearch = item.nama.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchSearch;
   });
 
@@ -120,7 +126,7 @@ export default function OrderPage() {
   };
 
   // ===============================================
-  // ✨ FUNGSI KIRIM PESANAN KE BACKEND
+  // ✨ FUNGSI KIRIM PESANAN (POST KE MONGODB)
   // ===============================================
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0) {
@@ -131,18 +137,20 @@ export default function OrderPage() {
     setIsLoading(true);
 
     try {
+      // Siapkan data order
       const orderData = {
         items: cartItems.map(item => ({
           menuId: item._id,
-          name: item.nama,
-          price: item.harga,
+          name: item.name,
+          price: item.price,
           qty: item.qty,
         })),
         total: totalPrice,
-        status: "pending"
+        status: "pending",
+        createdAt: new Date()
       };
 
-      // PERBAIKAN 2: Hapus http://localhost:5000, ganti jadi path relative
+      // Kirim ke API /api/orders
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
@@ -152,19 +160,22 @@ export default function OrderPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Gagal mengirim pesanan ke server");
+        const errData = await response.json();
+        throw new Error(errData.error || "Gagal mengirim pesanan");
       }
 
-      const savedOrder = await response.json();
-      console.log("Pesanan berhasil disimpan:", savedOrder);
-      alert("✅ Pesanan Anda berhasil dibuat! (Status: Menunggu Pembayaran)");
+      const result = await response.json();
+      console.log("Order Berhasil:", result);
       
+      alert(`✅ Pesanan Berhasil Dibuat!\nID Order: ${result.id || 'Baru'}`);
+      
+      // Reset keranjang
       setCartItems([]);
       setShowCartModal(false);
 
-    } catch (error) {
-      console.error("Error saat konfirmasi pesanan:", error);
-      alert("❌ Maaf, terjadi kesalahan. Coba lagi.");
+    } catch (error: any) {
+      console.error("Error saat konfirmasi:", error);
+      alert(`❌ Gagal membuat pesanan: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -174,9 +185,7 @@ export default function OrderPage() {
     <div className="d-flex bg-gradient min-vh-100">
       
       {/* ================= SIDEBAR ================= */}
-      <aside
-        className="sidebar d-none d-md-flex flex-column p-4"
-      >
+      <aside className="sidebar d-none d-md-flex flex-column p-4">
         <div className="mb-5">
            <Link href="/" className="text-decoration-none d-flex align-items-center gap-3">
               <div className="logo-circle">
@@ -293,8 +302,8 @@ export default function OrderPage() {
                   <div className="menu-card">
                     <div className="menu-image-container">
                       <Image 
-                          src={item.gambar} 
-                          alt={item.nama} 
+                          src={item.imgSrc} 
+                          alt={item.name} 
                           fill
                           style={{objectFit: "cover"}}
                           className="menu-image"
@@ -310,16 +319,16 @@ export default function OrderPage() {
                       )}
                     </div>
                     <div className="menu-content">
-                      <h5 className="menu-title">{item.nama}</h5>
+                      <h5 className="menu-title">{item.name}</h5>
                       <p className="menu-description">
-                        {item.deskripsi?.substring(0, 80) || "Hidangan lezat khas Manado"}...
+                        {item.description?.substring(0, 80) || "Hidangan lezat khas Manado"}...
                       </p>
                       <div className="menu-footer">
                         <div className="price-tag">
-                          {item.harga && item.harga > 0 ? (
+                          {item.price && item.price > 0 ? (
                             <>
                               <small className="text-muted d-block">Harga</small>
-                              <span className="price">Rp {item.harga.toLocaleString('id-ID')}</span>
+                              <span className="price">Rp {item.price.toLocaleString('id-ID')}</span>
                             </>
                           ) : (
                             <span className="text-danger">Harga tidak tersedia</span>
@@ -328,7 +337,7 @@ export default function OrderPage() {
                         <button 
                           onClick={() => handleAddToCart(item)}
                           className="btn-order"
-                          disabled={!item.harga || item.harga <= 0}
+                          disabled={!item.price || item.price <= 0}
                         >
                           <span className="me-2">+</span>
                           Pesan
@@ -384,16 +393,16 @@ export default function OrderPage() {
                       {cartItems.map((item, index) => (
                         <div key={item._id} className="cart-item">
                           <div className="cart-item-image">
-                             <Image src={item.gambar} alt={item.nama} fill style={{objectFit: 'cover'}} />
+                             <Image src={item.imgSrc} alt={item.name} fill style={{objectFit: 'cover'}} />
                           </div>
                           <div className="cart-item-details">
-                            <h6 className="cart-item-name">{item.nama}</h6>
-                            <p className="cart-item-price">Rp {(item.harga || 0).toLocaleString('id-ID')}</p>
+                            <h6 className="cart-item-name">{item.name}</h6>
+                            <p className="cart-item-price">Rp {(item.price || 0).toLocaleString('id-ID')}</p>
                           </div>
                           <div className="cart-item-quantity">
                             <button 
                               className="qty-btn qty-btn-minus" 
-                              onClick={() => handleDecreaseQty(item._id!)} 
+                              onClick={() => handleDecreaseQty(String(item._id))} 
                               disabled={isLoading}
                             >
                               −
@@ -408,7 +417,7 @@ export default function OrderPage() {
                             </button>
                           </div>
                           <div className="cart-item-subtotal">
-                            Rp {((item.harga || 0) * item.qty).toLocaleString('id-ID')}
+                            Rp {((item.price || 0) * item.qty).toLocaleString('id-ID')}
                           </div>
                         </div>
                       ))}

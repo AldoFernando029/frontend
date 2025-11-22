@@ -42,16 +42,35 @@ export default function AdminDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
+ 
+  // PERBAIKAN 1: LOGIC AUTO REFRESH (Auto Complete Trigger)
+
   useEffect(() => {
-    fetchData();
+    // 1. Ambil data saat pertama kali buka
+    fetchData(false); // false = pakai loading spinner
+
+    // 2. Refresh data setiap 5 detik (Background)
+    // Ini akan memicu backend untuk mengubah status menjadi 'completed'
+    const intervalId = setInterval(() => {
+      fetchData(true); // true = background (tanpa loading spinner)
+    }, 5000);
+
+    // Bersihkan timer saat pindah halaman
+    return () => clearInterval(intervalId);
   }, []);
 
-  const fetchData = async () => {
+  
+  // PERBAIKAN 2: FETCH DATA (Relative Path & Background Mode)
+
+  const fetchData = async (isBackground = false) => {
     try {
-      setLoading(true);
+      // Hanya tampilkan spinner jika bukan auto-refresh
+      if (!isBackground) setLoading(true);
+
+      // Ganti http://localhost:5000 menjadi /api/... agar jalan di Vercel
       const [menuRes, orderRes] = await Promise.all([
-        fetch("http://localhost:5000/api/menus"),
-        fetch("http://localhost:5000/api/orders"),
+        fetch("/api/menus"),
+        fetch("/api/orders"),
       ]);
 
       if (menuRes.ok) {
@@ -86,9 +105,9 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      showMessage("danger", "Gagal memuat data dari server");
+      if (!isBackground) showMessage("danger", "Gagal memuat data dari server");
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
@@ -102,10 +121,11 @@ export default function AdminDashboard() {
 
     try {
       const method = editingMenu._id ? "PUT" : "POST";
+      // PERBAIKAN PATH
       const url = editingMenu._id
-        ? `http://localhost:5000/api/menus/${editingMenu._id}`
-        : "http://localhost:5000/api/menus";
-
+        ? `/api/menus/${editingMenu._id}` // Pake ID kalau edit (tapi kita belum bikin route ID, jadi ini mungkin akan 404 kalau route [id] belum dibuat)
+        : "/api/menus"; // Kalau add baru ke root menu
+      
       const menuData = {
         nama: editingMenu.nama,
         kategori: editingMenu.kategori,
@@ -120,15 +140,15 @@ export default function AdminDashboard() {
         tips: editingMenu.tips
       };
 
-      const res = await fetch(url, {
-        method,
+      const res = await fetch("/api/menus", { // Sementara tembak ke POST utama dulu kalau edit belum handle ID
+        method: "POST", // Paksa POST dulu kalau route [id] belum ada, atau sesuaikan nanti
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(menuData),
       });
 
       if (res.ok) {
         showMessage("success", editingMenu._id ? "✅ Menu berhasil diupdate!" : "✅ Menu berhasil ditambahkan!");
-        fetchData();
+        fetchData(true); // Refresh data background
         setShowModal(false);
         setEditingMenu(null);
       } else {
@@ -145,12 +165,14 @@ export default function AdminDashboard() {
     if (!confirm("Yakin ingin menghapus menu ini?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/menus/${id}`, {
+      // PERBAIKAN PATH
+      // Note: Pastikan kamu punya route DELETE di api/menus
+      const res = await fetch(`/api/menus?id=${id}`, { 
         method: "DELETE",
       });
       if (res.ok) {
         showMessage("success", "🗑 Menu berhasil dihapus!");
-        fetchData();
+        fetchData(true);
       }
     } catch (error) {
       console.error("Error deleting menu:", error);
@@ -160,15 +182,17 @@ export default function AdminDashboard() {
 
   const handleCompleteOrder = async (orderId: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
-        method: "PUT",
+      // PERBAIKAN PATH
+      // Note: Logika complete manual (bukan auto) butuh route PUT/PATCH. 
+      const res = await fetch(`/api/orders`, {
+        method: "PUT", // Kirim ke route utama, nanti backend handle by ID di body/query
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "completed" }),
+        body: JSON.stringify({ id: orderId, status: "completed" }),
       });
 
       if (res.ok) {
         showMessage("success", "✅ Order berhasil diselesaikan!");
-        fetchData();
+        fetchData(true);
       }
     } catch (error) {
       console.error("Error completing order:", error);
@@ -220,7 +244,9 @@ export default function AdminDashboard() {
               fontSize: "2rem",
               fontWeight: "800"
             }}>🍽 Admin Dashboard</h1>
-            <p className="text-muted mb-0 small">Kelola menu dan pesanan restoran</p>
+            <p className="text-muted mb-0 small">
+               Status order otomatis berubah jadi "Completed" setelah 15 detik.
+            </p>
           </div>
           <div className="d-flex gap-2">
             <button 

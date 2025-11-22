@@ -2,6 +2,8 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image"; 
 import "bootstrap/dist/css/bootstrap.min.css";
 
 interface Comment {
@@ -11,17 +13,16 @@ interface Comment {
   rating?: number;
 }
 
-// Interface disesuaikan agar bisa menerima data dari MongoDB (nama/gambar)
 interface MenuItem {
   _id?: string;
   id?: number;
-  name: string; // Untuk UI
-  nama?: string; // Dari DB
-  imgSrc: string; // Untuk UI
-  gambar?: string; // Dari DB
+  name: string;
+  nama?: string;
+  imgSrc: string;
+  gambar?: string;
   ratingStars?: string;
   description: string;
-  deskripsi?: string; // Dari DB
+  deskripsi?: string;
   history?: string;
   kategori?: string;
   ingredients?: string;
@@ -40,7 +41,6 @@ interface Background {
 export default function Home() {
   const router = useRouter();
 
-  // UI state
   const [showModal, setShowModal] = useState<boolean>(false);
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [rating, setRating] = useState<number>(0);
@@ -53,57 +53,47 @@ export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [loadingMenu, setLoadingMenu] = useState<boolean>(false);
   const [backgrounds, setBackgrounds] = useState<Background[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // ============================================================
-  // FETCH DATA (Menu & Background dari API Vercel)
-  // ============================================================
   useEffect(() => {
     async function fetchData() {
       try {
         setLoadingMenu(true);
         
-        // 1. Fetch Menu dan Background secara bersamaan
         const [menuRes, bgRes] = await Promise.all([
-          fetch("/api/menus"),
-          fetch("/api/backgrounds") // Pastikan file route-nya dibuat (lihat langkah 2 di chat)
+          fetch("/api/menus").catch(() => null),
+          fetch("/api/backgrounds").catch(() => null)
         ]);
 
-        // 2. Olah Data Menu
-        if (menuRes.ok) {
-          const menuData = await menuRes.json();
-          if (Array.isArray(menuData)) {
-            const mappedMenu = menuData.map((m: any) => ({
+        let menuData: any[] = [];
+        let bgData: any[] = [];
+
+        if (menuRes && menuRes.ok) menuData = await menuRes.json();
+        if (bgRes && bgRes.ok) bgData = await bgRes.json();
+
+        if (Array.isArray(bgData) && bgData.length > 0) setBackgrounds(bgData);
+
+        if (Array.isArray(menuData) && menuData.length > 0) {
+          setFilteredMenu(
+            menuData.map((m: any) => ({
               ...m,
-              // MAPPING PENTING: Mencocokkan field DB (Indonesia) ke UI (Inggris)
               name: m.nama || m.name || "Tanpa Nama",
               imgSrc: m.gambar || m.imgSrc || "/images/placeholder.jpg",
               description: m.deskripsi || m.description || "",
+              ratingStars: "★★★★☆",
               price: m.harga || m.price || 0,
-              ratingStars: "★★★★☆"
-            }));
-            setFilteredMenu(mappedMenu);
-          }
+            }))
+          );
         }
-
-        // 3. Olah Data Background
-        if (bgRes.ok) {
-          const bgData = await bgRes.json();
-          if (Array.isArray(bgData) && bgData.length > 0) {
-            setBackgrounds(bgData);
-          }
-        }
-
       } catch (err) {
-        console.error("❌ Error fetching data:", err);
+        console.error("❌ Error fetching:", err);
       } finally {
         setLoadingMenu(false);
       }
     }
     fetchData();
   }, []);
-  // ============================================================
 
-  // Slideshow background auto ganti tiap 5 detik
   useEffect(() => {
     if (backgrounds.length === 0) return;
     const timer = setInterval(
@@ -113,7 +103,6 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [backgrounds]);
 
-  // Scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -123,7 +112,6 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load & simpan komentar lokal
   useEffect(() => {
     const stored = localStorage.getItem("meimo_comments");
     if (stored) setComments(JSON.parse(stored));
@@ -133,7 +121,6 @@ export default function Home() {
       localStorage.setItem("meimo_comments", JSON.stringify(comments));
   }, [comments]);
 
-  // Pencarian menu
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const q = searchQuery.trim().toLowerCase();
@@ -147,7 +134,6 @@ export default function Home() {
     );
   };
 
-  // Komentar
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -170,8 +156,6 @@ export default function Home() {
     setRating(0);
   };
 
-  // Default Background jika API belum load/kosong
-  // Kita pakai gambar Cloudinary pertama kamu sebagai default biar aman
   const defaultBg = "https://res.cloudinary.com/dgoxc9dmz/image/upload/v1763014752/meimo1_s6uovk.jpg";
   
   const bgUrl =
@@ -181,6 +165,42 @@ export default function Home() {
 
   return (
     <div>
+      {/* --- NAVBAR RESPONSIVE --- */}
+      <nav className={`navbar navbar-expand-lg fixed-top transition-all ${isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-3"}`}>
+        <div className="container">
+          <Link href="/" className="navbar-brand fw-bold d-flex align-items-center gap-2">
+             <span style={{ color: isScrolled || isMobileMenuOpen ? "#333" : "#fff", fontFamily: "Playfair Display", fontSize: "1.5rem" }}>
+               Rasa Manado
+             </span>
+          </Link>
+
+          {/* TOMBOL HAMBURGER */}
+          <button 
+            className="navbar-toggler border-0 shadow-none" 
+            type="button" 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{ color: isScrolled || isMobileMenuOpen ? "#333" : "#fff" }}
+          >
+            {isMobileMenuOpen ? "✕" : "☰"}
+          </button>
+
+          {/* MENU LINKS */}
+          <div className={`collapse navbar-collapse ${isMobileMenuOpen ? "show bg-white p-3 rounded shadow mt-2" : ""}`}>
+            <ul className="navbar-nav ms-auto align-items-center gap-3">
+              <li className="nav-item"><Link href="/" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Beranda</Link></li>
+              <li className="nav-item"><a href="#menu-gallery" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Menu</a></li>
+              <li className="nav-item"><Link href="/admin" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Admin</Link></li>
+              <li className="nav-item">
+                <Link href="/order" className="btn btn-warning rounded-pill px-4 fw-bold text-white shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>
+                  Dine In / Pesan
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+      {/* --- AKHIR NAVBAR --- */}
+
       {/* HERO */}
       <header
         className="hero-section"
@@ -188,7 +208,9 @@ export default function Home() {
           backgroundImage: `url(${bgUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
-          transition: "background-image 1s ease-in-out" // Efek transisi halus
+          transition: "background-image 1s ease-in-out",
+          minHeight: "100vh", 
+          paddingTop: "60px"
         }}
       >
         <div className="hero-overlay">
@@ -206,39 +228,27 @@ export default function Home() {
       <section id="menu-gallery" className="py-5 bg-dark text-white">
         <div className="container text-center mb-5">
           <h2>Galeri Menu Spesial</h2>
-          <p>Klik gambar untuk melihat detail, sejarah, dan resepnya.</p>
+          <p>Klik gambar untuk melihat detail.</p>
         </div>
         <div className="horizontal-scroll-wrapper">
           {loadingMenu ? (
-             <p className="text-center text-white">Memuat menu...</p>
+             <p className="text-center w-100">Memuat menu...</p>
           ) : filteredMenu.map((menu) => (
             <div
-              key={menu._id || menu.id || Math.random()}
+              key={menu._id || Math.random()}
               className="scroll-card-item"
-              onClick={() => {
-                setSelectedMenu(menu);
-                setShowModal(true);
-              }}
+              onClick={() => { setSelectedMenu(menu); setShowModal(true); }}
             >
               <div className="card menu-card shadow">
                 <img
                   src={menu.imgSrc}
                   alt={menu.name}
-                  style={{
-                    width: "100%",
-                    height: "300px",
-                    objectFit: "cover",
-                  }}
+                  style={{ width: "100%", height: "300px", objectFit: "cover" }}
                   className="card-img-top"
                 />
                 <div className="card-body">
                   <h5>{menu.name}</h5>
-                  <div className="text-warning fs-5 mb-2">
-                    {menu.ratingStars}
-                  </div>
-                  <p className="small text-muted">
-                    {menu.description?.substring(0, 70)}...
-                  </p>
+                  <div className="text-warning fs-5 mb-2">{menu.ratingStars}</div>
                 </div>
               </div>
             </div>
@@ -248,169 +258,55 @@ export default function Home() {
 
       {/* MODAL DETAIL MENU */}
       {showModal && selectedMenu && (
-        <div
-          className="modal fade show d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
-          onClick={() => setShowModal(false)}
-          tabIndex={-1}
-        >
-          <div
-            className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-content">
-              <div className="modal-header">
-                <h3 className="modal-title">{selectedMenu.name}</h3>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowModal(false)}
-                  aria-label="Close"
-                ></button>
+        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.8)", zIndex: 1050 }} tabIndex={-1}>
+          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 rounded-4 overflow-hidden">
+              <div className="modal-header bg-white border-0">
+                <h3 className="modal-title fw-bold text-dark">{selectedMenu.name}</h3>
+                <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
               </div>
-
-              <div className="modal-body p-4 p-lg-5">
-                <div className="row">
-                  <div className="col-lg-5 mb-4 mb-lg-0">
-                    <img
-                      src={selectedMenu.imgSrc}
-                      alt={selectedMenu.name}
-                      style={{
-                        width: "100%",
-                        height: "400px",
-                        objectFit: "cover",
-                        borderRadius: "0.5rem",
-                      }}
-                      className="img-fluid rounded shadow-sm mb-3"
-                    />
-                    <div className="p-3 bg-light rounded text-center border">
-                      <div className="text-warning fs-3 mb-2">
-                        {selectedMenu.ratingStars}
-                      </div>
-                      <small className="text-muted">Rating Rata-Rata</small>
+              <div className="modal-body p-0">
+                <div className="row g-0">
+                  <div className="col-lg-6">
+                    <div style={{ height: "400px", position: "relative" }}>
+                       <Image 
+                         src={selectedMenu.imgSrc} 
+                         alt={selectedMenu.name} 
+                         fill 
+                         style={{ objectFit: "cover" }}
+                       />
                     </div>
                   </div>
-
-                  <div className="col-lg-7">
-                    <div className="mb-4">
-                      <h4>Deskripsi</h4>
-                      <p>{selectedMenu.description}</p>
-                    </div>
-
+                  <div className="col-lg-6 p-4 p-lg-5 bg-light">
+                    <h5 className="fw-bold text-primary mb-3">Deskripsi</h5>
+                    <p className="text-muted">{selectedMenu.description}</p>
+                    
                     {selectedMenu.ingredients && (
-                      <div className="mb-4">
-                        <h4>Bahan-Bahan Utama</h4>
-                        <p className="text-muted">{selectedMenu.ingredients}</p>
-                      </div>
+                      <>
+                        <h5 className="fw-bold text-primary mb-2 mt-4">Bahan Utama</h5>
+                        <p className="text-muted small">{selectedMenu.ingredients}</p>
+                      </>
                     )}
 
-                    <div className="mb-4">
-                      <h4>Sejarah & Budaya</h4>
-                      <p>{selectedMenu.history || "Resep turun temurun keluarga."}</p>
+                    <div className="mt-4 p-3 bg-white rounded shadow-sm border-start border-4 border-warning">
+                       <strong>💡 Tips Chef:</strong> {selectedMenu.tips || "Nikmati selagi hangat."}
                     </div>
 
-                    <div className="mb-4">
-                        <h4>Tips Chef</h4>
-                        <div className="alert alert-warning bg-warning-subtle border-warning">
-                          {selectedMenu.tips || "Sajikan selagi hangat untuk rasa terbaik."}
-                        </div>
-                    </div>
-
-                    <hr className="my-4" />
-                    <h4>Bagikan Pengalaman Anda</h4>
-
-                    <div className="mb-3 p-3 bg-light rounded border rating-stars text-center">
-                      <span className="fw-bold me-3 align-middle fs-5">
-                        Beri Rating Anda:
-                      </span>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <span
-                          key={star}
-                          onClick={() => setRating(star)}
-                          onMouseEnter={() => setHoverRating(star)}
-                          onMouseLeave={() => setHoverRating(0)}
-                          className={star <= (hoverRating || rating) ? "active" : ""}
-                        >
-                          ★
-                        </span>
-                      ))}
-                      {rating > 0 && (
-                        <span className="ms-3 text-success fw-bold fs-5 align-middle">
-                          ({rating}/5)
-                        </span>
-                      )}
-                    </div>
-
-                    <form className="comment-form" onSubmit={handleSubmit}>
-                      <div className="mb-3">
-                        <label htmlFor="nama-user" className="form-label">
-                          Nama Anda
-                        </label>
-                        <input
-                          type="text"
-                          id="nama-user"
-                          className="form-control"
-                          placeholder="Anonim"
-                        />
-                      </div>
-                      <div className="mb-3">
-                        <label htmlFor="isi-komentar" className="form-label">
-                          Komentar *
-                        </label>
-                        <textarea
-                          id="isi-komentar"
-                          rows={4}
-                          className="form-control"
-                          placeholder="Ceritakan pengalaman Anda mencoba menu ini..."
-                          required
-                        ></textarea>
-                      </div>
-                      <button type="submit" className="btn btn-primary w-100 btn-lg">
-                        Kirim Komentar
-                      </button>
-                    </form>
-
-                    <div className="mt-5">
-                      <h4 className="mb-3">
-                        Komentar Pengguna ({comments.length})
-                      </h4>
-                      <div
-                        style={{ maxHeight: "300px", overflowY: "auto" }}
-                        className="p-2 border rounded"
-                      >
-                        {comments.length === 0 ? (
-                          <div className="text-center p-4 bg-light rounded">
-                            <p className="text-muted mb-0">
-                              Belum ada komentar. Jadilah yang pertama! 🎉
-                            </p>
-                          </div>
-                        ) : (
-                          comments.map((c, i) => (
-                            <div
-                              key={i}
-                              className="border-bottom p-3 mb-2 bg-light rounded"
-                            >
-                              <div className="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                  <strong className="text-primary">
-                                    👤 {c.name}
-                                  </strong>
-                                  {c.rating && (
-                                    <span className="ms-2 text-warning fw-bold">
-                                      {"★".repeat(c.rating)}
-                                      <span className="text-muted">
-                                        {"☆".repeat(5 - c.rating)}
-                                      </span>
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-muted small">{c.date}</span>
+                    {/* FORM KOMENTAR SEDERHANA */}
+                    <div className="mt-5 pt-4 border-top">
+                        <h6>Kirim Komentar</h6>
+                        <form onSubmit={handleSubmit} className="mt-2">
+                           <input id="nama-user" className="form-control mb-2" placeholder="Nama Anda" required />
+                           <textarea id="isi-komentar" className="form-control mb-2" rows={2} placeholder="Tulis komentar..." required></textarea>
+                           <div className="d-flex align-items-center justify-content-between">
+                              <div className="rating-input">
+                                {[1,2,3,4,5].map(s => (
+                                  <span key={s} onClick={() => setRating(s)} style={{cursor:"pointer", color: s <= rating ? "#ffc107" : "#ddd", fontSize:"1.5rem"}}>★</span>
+                                ))}
                               </div>
-                              <p className="mb-0">{c.text}</p>
-                            </div>
-                          ))
-                        )}
-                      </div>
+                              <button type="submit" className="btn btn-primary btn-sm px-4">Kirim</button>
+                           </div>
+                        </form>
                     </div>
                   </div>
                 </div>
@@ -420,12 +316,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* FOOTER (MAP + INFO + TIDAK DIHAPUS) */}
-      <footer className="footer mt-5">
+      {/* FOOTER & SCROLL TOP BUTTON (KOMBINASI DUA FOOTER ASLI) */}
+      <footer className="footer mt-5 pt-5 pb-3 bg-white text-dark border-top">
         <div className="container">
-          <div className="mb-4">
+          {/* Bagian Map/Lokasi */}
+          <div className="mb-5">
             <h5 className="mb-3 text-center">Lokasi Kami</h5>
             <div className="ratio ratio-21x9">
+              {/* NOTE: Link iFrame ini masih menggunakan URL yang tidak valid/dummy. */}
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.712454356452!2d106.78726097499202!3d-6.174721693801916!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f70002bcd3f9%3A0xcf51c0e1b63aedf4!2sMeimo%20Masakan%20Manado%20Neo%20Soho!5e0!3m2!1sid!2sid!4v1730989000000!5m2!1sid!2sid"
                 style={{ border: 0, borderRadius: "0.5rem" }}
@@ -437,48 +335,34 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Bagian Info Kontak */}
           <div className="row text-start mt-5">
             <div className="col-lg-4 mb-4 mb-lg-0">
-              <h5 className="footer-brand-title">Meimo</h5>
-              <p>
-                Baik pelanggan setia maupun pengunjung baru, kami berharap dapat
-                melayani Anda dan berbagi hasrat kami untuk masakan lezat.
-              </p>
+              <h5 className="footer-brand-title fw-bold">Meimo</h5>
+              <p>Baik pelanggan setia maupun pengunjung baru, kami berharap dapat melayani Anda dan berbagi hasrat kami untuk masakan lezat.</p>
             </div>
-
             <div className="col-lg-4 mb-4 mb-lg-0">
               <h5>Jam Operasional</h5>
               <p>Setiap Hari: 10:00 - 22:00</p>
-
               <h5 className="mt-4">Alamat</h5>
               <p>
-                Neo Soho Mall, Lantai 4
-                <br />
+                Neo Soho Mall, Lantai 4<br />
                 Jakarta Barat, Indonesia 11470
               </p>
             </div>
-
             <div className="col-lg-4">
               <h5>Hubungi Kami</h5>
               <p>
-                <a href="tel:+6281234567890">+62 812 3456 7890</a> (Reservasi)
-                <br />
+                <a href="tel:+6281234567890">+62 812 3456 7890</a> (Reservasi)<br />
                 <a href="mailto:reservasi@meimo.com">reservasi@meimo.com</a>
               </p>
-
               <a
                 href="https://wa.me/6281234567890"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-success d-inline-flex align-items-center gap-2 px-4 py-2 mt-3 shadow-sm"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  fill="currentColor"
-                  viewBox="0 0 16 16"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
                   <path d="M13.6 2.3A7.8 7.8 0 0 0 8 0 7.9 7.9 0 0 0 .1 7.9a7.8 7.8 0 0 0 1 4L0 16l4.2-1.1a8 8 0 0 0 3.8 1h.1a8 8 0 0 0 5.5-13.6zM8 14.5a6.6 6.6 0 0 1-3.4-.9l-.2-.1-2.5.6.7-2.4-.2-.2a6.6 6.6 0 1 1 5.6 3z" />
                 </svg>
                 WhatsApp Kami
@@ -486,7 +370,7 @@ export default function Home() {
             </div>
           </div>
 
-          <hr className="mt-5 mb-4" style={{ borderColor: "rgba(255,255,255,0.2)" }} />
+          <hr className="mt-5 mb-4" style={{ borderColor: "#eee" }} />
           <p className="text-muted small mb-0 text-center">
             © {new Date().getFullYear()} Meimo Neo Soho. Semua hak cipta dilindungi.
           </p>

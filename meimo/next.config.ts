@@ -1,25 +1,14 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'example.com', 
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
+        protocol: "https",
+        hostname: "**", // Tanda ** artinya BOLEH ambil gambar dari website MANA SAJA
       },
     ],
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

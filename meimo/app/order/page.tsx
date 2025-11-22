@@ -43,7 +43,9 @@ export default function OrderPage() {
     async function fetchMenuFromDB() {
       try {
         setLoadingMenu(true);
-        const response = await fetch("http://localhost:5000/api/menus");
+        
+        // PERBAIKAN 1: Hapus http://localhost:5000, ganti jadi path relative
+        const response = await fetch("/api/menus");
 
         if (!response.ok) {
           throw new Error("Gagal mengambil data menu dari server");
@@ -140,7 +142,8 @@ export default function OrderPage() {
         status: "pending"
       };
 
-      const response = await fetch("http://localhost:5000/api/orders", {
+      // PERBAIKAN 2: Hapus http://localhost:5000, ganti jadi path relative
+      const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -442,11 +445,11 @@ export default function OrderPage() {
                     disabled={isLoading} 
                   >
                     {isLoading ? (
-                       <>
-                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                         Memproses...
-                       </>
-                    ) : (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          Memproses...
+                        </>
+                     ) : (
                       <>
                         <span className="me-2">✓</span>
                         Konfirmasi Pesanan

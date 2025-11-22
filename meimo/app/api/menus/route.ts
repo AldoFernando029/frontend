@@ -1,46 +1,35 @@
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
-// Wajib: Agar Vercel selalu cek data baru (tidak cache)
+// Wajib: Agar data selalu fresh
 export const dynamic = 'force-dynamic';
 
-const MONGO_URI = process.env.MONGODB_URI;
-
 export async function GET() {
+  const MONGO_URI = process.env.MONGODB_URI;
+
+  // 1. Cek Kunci Jawaban (Environment Variable)
+  if (!MONGO_URI) {
+    return NextResponse.json({ error: "FATAL: MONGODB_URI belum disetting di Vercel!" }, { status: 500 });
+  }
+
   try {
-    // 1. Cek Environment Variable
-    if (!MONGO_URI) {
-      return NextResponse.json({ error: "MONGODB_URI tidak ditemukan di Vercel Settings" }, { status: 500 });
-    }
-
-    // 2. Koneksi Database (Paksa ke database 'meimo')
+    // 2. Koneksi ke Server
     if (!mongoose.connections[0].readyState) {
-      await mongoose.connect(MONGO_URI, { 
-        dbName: "meimo"  // paksa masuk ke database meimo
-      });
-      console.log("✅ Terkoneksi ke MongoDB");
+      await mongoose.connect(MONGO_URI);
     }
 
-    // 3. AMBIL DATA LANGSUNG (Tanpa Schema Model)
-    // gunakan native driver untuk langsung comot data dari collection 'menus'
-    // Ini menghindari masalah salah nama model/schema di Mongoose
-    const db = mongoose.connection.useDb("meimo"); 
-    const collection = db.collection("menus");
-    
-    const allMenus = await collection.find({}).toArray();
+    // 3. AKSES LANGSUNG (Tanpa Schema/Model)
+    // Ini intinya: "Pindah ke database 'meimo', lalu buka collection 'menus'"
+    const db = mongoose.connection.useDb("meimo");
+    const rawData = await db.collection("menus").find({}).toArray();
 
-    // 4. Cek Hasil
-    console.log(`📊 Ditemukan ${allMenus.length} menu.`);
-    
-    // Kalau kosong, kasih pesan error biar tau
-    if (allMenus.length === 0) {
-        return NextResponse.json([], { status: 200 }); // Kembalikan array kosong, bukan error
-    }
+    console.log(` Berhasil ambil ${rawData.length} menu dari database asli.`);
 
-    return NextResponse.json(allMenus);
+    // 4. Kirim Data Asli
+    return NextResponse.json(rawData);
 
   } catch (error: any) {
-    console.error("🔥 Error:", error.message);
-    return NextResponse.json({ error: "Server Error", details: error.message }, { status: 500 });
+    console.error(" Database Error:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -20,21 +20,28 @@ const connectDB = async () => {
   }
 };
 
-// 2. MODEL DATA
+// 2. MODEL DATA (SCHEMA)
+// tambahkan 'gambar' dan 'kategori' agar data tidak hilang
 const MenuSchema = new mongoose.Schema({
   nama: { type: String, required: true },
   harga: { type: Number, required: true },
-  deskripsi: { type: String }
-});
+  deskripsi: { type: String },
+  kategori: { type: String }, // Tambahan: Supaya kategori (Main/Snack) terbaca
+  gambar: { type: String }    // Tambahan: WAJIB ADA supaya gambar Cloudinary muncul
+}, { strict: false }); // strict: false agar field lain di database tetap ikut terambil
 
-// Cek model supaya tidak error saat reload
+// Cek model supaya tidak error "OverwriteModelError" saat reload
+// Pastikan nama collection tetap "fkugd" sesuai database 
 const Menu = mongoose.models.Menu || mongoose.model("Menu", MenuSchema, "fkugd");
 
-// 3. API GET (INI YANG TADI HILANG)
+// 3. API GET (Mengambil Semua Menu)
 export async function GET() {
   try {
     await connectDB();
-    const allMenus = await Menu.find();
+    
+    // Ambil semua data menu
+    const allMenus = await Menu.find({});
+    
     return NextResponse.json(allMenus);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

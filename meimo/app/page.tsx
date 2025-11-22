@@ -11,27 +11,30 @@ interface Comment {
   rating?: number;
 }
 
+// Interface disesuaikan agar bisa menerima data dari MongoDB (nama/gambar)
 interface MenuItem {
   _id?: string;
   id?: number;
-  name: string;
-  nama?: string;
-  imgSrc: string;
-  gambar?: string;
+  name: string; // Untuk UI
+  nama?: string; // Dari DB
+  imgSrc: string; // Untuk UI
+  gambar?: string; // Dari DB
   ratingStars?: string;
   description: string;
-  deskripsi?: string;
+  deskripsi?: string; // Dari DB
   history?: string;
   kategori?: string;
   ingredients?: string;
   tips?: string;
   price?: number;
+  harga?: number;
 }
 
 interface Background {
-  _id: string;
+  _id?: string;
   nama: string;
   url: string;
+  deskripsi?: string;
 }
 
 export default function Home() {
@@ -52,59 +55,46 @@ export default function Home() {
   const [backgrounds, setBackgrounds] = useState<Background[]>([]);
 
   // ============================================================
-  // PERBAIKAN FETCH DATA (Hanya dari MongoDB/Cloudinary via API)
+  // FETCH DATA (Menu & Background dari API Vercel)
   // ============================================================
   useEffect(() => {
     async function fetchData() {
       try {
-        // Menggunakan path relative untuk memanggil API Route Next.js
-        // Ini akan bekerja otomatis baik di localhost maupun Vercel
-        const [bgRes, menuRes] = await Promise.all([
-          fetch("/api/backgrounds").catch(() => null), // Fetch background (opsional)
-          fetch("/api/menus") // Fetch menu (wajib)
+        setLoadingMenu(true);
+        
+        // 1. Fetch Menu dan Background secara bersamaan
+        const [menuRes, bgRes] = await Promise.all([
+          fetch("/api/menus"),
+          fetch("/api/backgrounds") // Pastikan file route-nya dibuat (lihat langkah 2 di chat)
         ]);
 
-        let bgData = [];
-        let menuData = [];
-
-        // Proses Background
-        if (bgRes && bgRes.ok) {
-          try {
-            bgData = await bgRes.json();
-          } catch (e) {
-            console.log("Gagal parse background JSON");
+        // 2. Olah Data Menu
+        if (menuRes.ok) {
+          const menuData = await menuRes.json();
+          if (Array.isArray(menuData)) {
+            const mappedMenu = menuData.map((m: any) => ({
+              ...m,
+              // MAPPING PENTING: Mencocokkan field DB (Indonesia) ke UI (Inggris)
+              name: m.nama || m.name || "Tanpa Nama",
+              imgSrc: m.gambar || m.imgSrc || "/images/placeholder.jpg",
+              description: m.deskripsi || m.description || "",
+              price: m.harga || m.price || 0,
+              ratingStars: "★★★★☆"
+            }));
+            setFilteredMenu(mappedMenu);
           }
         }
 
-        // Proses Menu
-        if (menuRes.ok) {
-          menuData = await menuRes.json();
-        } else {
-          throw new Error("Gagal mengambil data menu");
+        // 3. Olah Data Background
+        if (bgRes.ok) {
+          const bgData = await bgRes.json();
+          if (Array.isArray(bgData) && bgData.length > 0) {
+            setBackgrounds(bgData);
+          }
         }
 
-        // Set State Background dari Database
-        if (Array.isArray(bgData) && bgData.length > 0) {
-          setBackgrounds(bgData);
-        }
-
-        // Set State Menu dari Database
-        if (Array.isArray(menuData) && menuData.length > 0) {
-          setFilteredMenu(
-            menuData.map((m: any) => ({
-              ...m,
-              // Mapping field agar sesuai interface
-              name: m.nama || m.name,
-              description: m.deskripsi || m.description || "",
-              // Pastikan mengambil URL Cloudinary dari field 'gambar'
-              imgSrc: m.gambar || m.imgSrc || "/images/placeholder.jpg", 
-              ratingStars: "★★★★☆",
-              price: m.price || m.harga || 0,
-            }))
-          );
-        }
       } catch (err) {
-        console.error("❌ Error fetching API data:", err);
+        console.error("❌ Error fetching data:", err);
       } finally {
         setLoadingMenu(false);
       }
@@ -152,8 +142,7 @@ export default function Home() {
       prev.filter(
         (m) =>
           m.name.toLowerCase().includes(q) ||
-          m.description.toLowerCase().includes(q) ||
-          (m.ingredients || "").toLowerCase().includes(q)
+          m.description.toLowerCase().includes(q)
       )
     );
   };
@@ -181,25 +170,14 @@ export default function Home() {
     setRating(0);
   };
 
-  // Tambah ke keranjang
-  const addToCart = async (item: MenuItem, qty = 1) => {
-    const key = "meimo_cart";
-    const raw = localStorage.getItem(key);
-    const cart: { id?: number; name: string; price?: number; qty: number }[] =
-      raw ? JSON.parse(raw) : [];
-
-    const exist = cart.find((c) => c.id === item.id && c.name === item.name);
-    if (exist) exist.qty += qty;
-    else cart.push({ id: item.id, name: item.name, price: item.price, qty });
-
-    localStorage.setItem(key, JSON.stringify(cart));
-    alert(`${item.name} ditambahkan ke keranjang.`);
-  };
-
+  // Default Background jika API belum load/kosong
+  // Kita pakai gambar Cloudinary pertama kamu sebagai default biar aman
+  const defaultBg = "https://res.cloudinary.com/dgoxc9dmz/image/upload/v1763014752/meimo1_s6uovk.jpg";
+  
   const bgUrl =
-    backgrounds.length > 0
+    backgrounds.length > 0 && backgrounds[currentBgIndex]
       ? backgrounds[currentBgIndex].url
-      : "https://res.cloudinary.com/dgoxc9dmz/image/upload/v1763014752/meimo1_s6uovk.jpg"; // Default fallback jika API belum siap
+      : defaultBg;
 
   return (
     <div>
@@ -210,6 +188,7 @@ export default function Home() {
           backgroundImage: `url(${bgUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          transition: "background-image 1s ease-in-out" // Efek transisi halus
         }}
       >
         <div className="hero-overlay">
@@ -230,9 +209,11 @@ export default function Home() {
           <p>Klik gambar untuk melihat detail, sejarah, dan resepnya.</p>
         </div>
         <div className="horizontal-scroll-wrapper">
-          {filteredMenu.map((menu) => (
+          {loadingMenu ? (
+             <p className="text-center text-white">Memuat menu...</p>
+          ) : filteredMenu.map((menu) => (
             <div
-              key={menu._id || menu.name}
+              key={menu._id || menu.id || Math.random()}
               className="scroll-card-item"
               onClick={() => {
                 setSelectedMenu(menu);
@@ -253,7 +234,7 @@ export default function Home() {
                 <div className="card-body">
                   <h5>{menu.name}</h5>
                   <div className="text-warning fs-5 mb-2">
-                    {menu.ratingStars || "★★★★☆"}
+                    {menu.ratingStars}
                   </div>
                   <p className="small text-muted">
                     {menu.description?.substring(0, 70)}...
@@ -325,17 +306,15 @@ export default function Home() {
 
                     <div className="mb-4">
                       <h4>Sejarah & Budaya</h4>
-                      <p>{selectedMenu.history}</p>
+                      <p>{selectedMenu.history || "Resep turun temurun keluarga."}</p>
                     </div>
 
-                    {selectedMenu.tips && (
-                      <div className="mb-4">
+                    <div className="mb-4">
                         <h4>Tips Chef</h4>
                         <div className="alert alert-warning bg-warning-subtle border-warning">
-                          {selectedMenu.tips}
+                          {selectedMenu.tips || "Sajikan selagi hangat untuk rasa terbaik."}
                         </div>
-                      </div>
-                    )}
+                    </div>
 
                     <hr className="my-4" />
                     <h4>Bagikan Pengalaman Anda</h4>

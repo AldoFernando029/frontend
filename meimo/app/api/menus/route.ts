@@ -1,48 +1,46 @@
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
-// Pastikan selalu fresh, tidak di-cache
+// Wajib: Agar Vercel selalu cek data baru (tidak cache)
 export const dynamic = 'force-dynamic';
 
 const MONGO_URI = process.env.MONGODB_URI;
 
-const connectDB = async () => {
-  if (mongoose.connections[0].readyState) {
-    return;
-  }
-  if (!MONGO_URI) {
-    throw new Error("MONGODB_URI tidak ditemukan di Environment Variables!");
-  }
-  try {
-    // Opsi dbName memaksa koneksi ke database 'meimo'
-    await mongoose.connect(MONGO_URI, { dbName: "meimo" });
-    console.log("✅ Berhasil Connect ke MongoDB Database: meimo");
-  } catch (error) {
-    console.error("❌ Gagal Connect Database:", error);
-    throw error;
-  }
-};
-
-// Schema longgar (strict: false) supaya bisa baca field 'nama', 'name', 'gambar', 'imgSrc' sekaligus
-const MenuSchema = new mongoose.Schema({}, { strict: false });
-
-const Menu = mongoose.models.Menu || mongoose.model("Menu", MenuSchema, "menus");
-
 export async function GET() {
   try {
-    await connectDB();
-    
-    // Ambil semua data dari collection 'menus'
-    const allMenus = await Menu.find({});
-    
-    // Cek di Log Vercel berapa data yang ditemukan
-    console.log(` Ditemukan ${allMenus.length} menu dari database 'meimo'.`);
+    // 1. Cek Environment Variable
+    if (!MONGO_URI) {
+      return NextResponse.json({ error: "MONGODB_URI tidak ditemukan di Vercel Settings" }, { status: 500 });
+    }
 
-    // Kirim data murni dari database
+    // 2. Koneksi Database (Paksa ke database 'meimo')
+    if (!mongoose.connections[0].readyState) {
+      await mongoose.connect(MONGO_URI, { 
+        dbName: "meimo"  // paksa masuk ke database meimo
+      });
+      console.log("✅ Terkoneksi ke MongoDB");
+    }
+
+    // 3. AMBIL DATA LANGSUNG (Tanpa Schema Model)
+    // gunakan native driver untuk langsung comot data dari collection 'menus'
+    // Ini menghindari masalah salah nama model/schema di Mongoose
+    const db = mongoose.connection.useDb("meimo"); 
+    const collection = db.collection("menus");
+    
+    const allMenus = await collection.find({}).toArray();
+
+    // 4. Cek Hasil
+    console.log(`📊 Ditemukan ${allMenus.length} menu.`);
+    
+    // Kalau kosong, kasih pesan error biar tau
+    if (allMenus.length === 0) {
+        return NextResponse.json([], { status: 200 }); // Kembalikan array kosong, bukan error
+    }
+
     return NextResponse.json(allMenus);
 
   } catch (error: any) {
-    console.error(" API Error:", error.message);
-    return NextResponse.json({ error: "Gagal ambil data dari DB", details: error.message }, { status: 500 });
+    console.error("🔥 Error:", error.message);
+    return NextResponse.json({ error: "Server Error", details: error.message }, { status: 500 });
   }
 }

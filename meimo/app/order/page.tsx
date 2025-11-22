@@ -1,3 +1,4 @@
+// FILE: meimo/app/order/page.tsx (FINAL)
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -125,7 +126,7 @@ export default function OrderPage() {
   }, []);
 
   // ===============================================
-  // ✨ FUNGSI KIRIM PESANAN (POST KE MONGODB) - FIX ANTI-CRASH
+  // ✨ FUNGSI KIRIM PESANAN (POST KE MONGODB)
   // ===============================================
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0) {
@@ -156,18 +157,11 @@ export default function OrderPage() {
         body: JSON.stringify(orderData),
       });
 
-      // --- PERBAIKAN KRUSIAL ANTI-CRASH ---
       if (!response.ok) {
-        // Ambil status dan body sebagai TEXT jika error
-        const status = response.status;
-        const errorText = await response.text(); 
-        console.error("Server Error Response:", status, errorText);
-        
-        // Tampilkan pesan error yang jelas
-        throw new Error(`Gagal Server! Status: ${status} (${response.statusText}).`);
+        const errData = await response.json();
+        throw new Error(errData.error || "Gagal mengirim pesanan");
       }
 
-      // Lanjut parse JSON HANYA jika response.ok (status 201)
       const result = await response.json();
       console.log("Order Berhasil:", result);
       
@@ -178,7 +172,7 @@ export default function OrderPage() {
 
     } catch (error: any) {
       console.error("Error saat konfirmasi:", error);
-      alert(`❌ Gagal membuat pesanan: ${error.message}`); // Menampilkan error status (misal: "Gagal Server! Status: 404")
+      alert(`❌ Gagal membuat pesanan: ${error.message}`);
     } finally {
       setIsLoading(false);
     }

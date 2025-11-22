@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image"; 
 import "bootstrap/dist/css/bootstrap.min.css";
 
+// --- INTERFACES LENGKAP
 interface Comment {
   name: string;
   text: string;
@@ -16,17 +17,17 @@ interface Comment {
 interface MenuItem {
   _id?: string;
   id?: number;
-  name: string;
+  name: string; 
   nama?: string;
   imgSrc: string;
   gambar?: string;
   ratingStars?: string;
   description: string;
   deskripsi?: string;
-  history?: string;
+  history?: string;        // <--- DIPERBAIKI
   kategori?: string;
-  ingredients?: string;
-  tips?: string;
+  ingredients?: string;    // <--- DIPERBAIKI
+  tips?: string;           // <--- DIPERBAIKI
   price?: number;
   harga?: number;
 }
@@ -37,6 +38,7 @@ interface Background {
   url: string;
   deskripsi?: string;
 }
+// --- AKHIR INTERFACE ---
 
 export default function Home() {
   const router = useRouter();
@@ -49,12 +51,16 @@ export default function Home() {
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredMenu, setFilteredMenu] = useState<MenuItem[]>([]);
+  
+  // LOGIC SCROLL FIX (Dipersingkat)
   const [isScrolled, setIsScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  
   const [loadingMenu, setLoadingMenu] = useState<boolean>(false);
   const [backgrounds, setBackgrounds] = useState<Background[]>([]);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Mobile Menu State
 
+  // FETCH DATA
   useEffect(() => {
     async function fetchData() {
       try {
@@ -82,6 +88,10 @@ export default function Home() {
               description: m.deskripsi || m.description || "",
               ratingStars: "★★★★☆",
               price: m.harga || m.price || 0,
+              // Pastikan semua field ada untuk Modal
+              history: m.history || m.sejarah || '', 
+              ingredients: m.ingredients || m.bahan || '',
+              tips: m.tips || ''
             }))
           );
         }
@@ -94,12 +104,10 @@ export default function Home() {
     fetchData();
   }, []);
 
+  // SLIDESHOW & SCROLL LOGIC
   useEffect(() => {
     if (backgrounds.length === 0) return;
-    const timer = setInterval(
-      () => setCurrentBgIndex((prev) => (prev + 1) % backgrounds.length),
-      5000
-    );
+    const timer = setInterval(() => setCurrentBgIndex((prev) => (prev + 1) % backgrounds.length), 5000);
     return () => clearInterval(timer);
   }, [backgrounds]);
 
@@ -112,44 +120,33 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
+  // LOCAL STORAGE & COMMENT LOGIC
+  useEffect(() => { 
     const stored = localStorage.getItem("meimo_comments");
     if (stored) setComments(JSON.parse(stored));
   }, []);
-  useEffect(() => {
-    if (comments.length > 0)
-      localStorage.setItem("meimo_comments", JSON.stringify(comments));
+  useEffect(() => { 
+    if (comments.length > 0) localStorage.setItem("meimo_comments", JSON.stringify(comments));
   }, [comments]);
-
-  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+  
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => { 
     e.preventDefault();
     const q = searchQuery.trim().toLowerCase();
     if (q === "") return;
     setFilteredMenu((prev) =>
-      prev.filter(
-        (m) =>
-          m.name.toLowerCase().includes(q) ||
-          m.description.toLowerCase().includes(q)
-      )
+      prev.filter((m) => m.name.toLowerCase().includes(q) || m.description.toLowerCase().includes(q))
     );
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => { 
     e.preventDefault();
     const form = e.currentTarget;
-    const name =
-      form.querySelector<HTMLInputElement>("#nama-user")?.value || "Anonim";
-    const text =
-      form
-        .querySelector<HTMLTextAreaElement>("#isi-komentar")
-        ?.value.trim() || "";
+    const name = form.querySelector<HTMLInputElement>("#nama-user")?.value || "Anonim";
+    const text = form.querySelector<HTMLTextAreaElement>("#isi-komentar")?.value.trim() || "";
     if (!text) return alert("Komentar tidak boleh kosong!");
     if (rating === 0) return alert("Silakan berikan rating terlebih dahulu!");
     const newComment: Comment = {
-      name,
-      text,
-      date: new Date().toLocaleString("id-ID"),
-      rating,
+      name, text, date: new Date().toLocaleString("id-ID"), rating,
     };
     setComments((prev) => [newComment, ...prev]);
     form.reset();
@@ -157,10 +154,7 @@ export default function Home() {
   };
 
   const defaultBg = "https://res.cloudinary.com/dgoxc9dmz/image/upload/v1763014752/meimo1_s6uovk.jpg";
-  
-  const bgUrl = backgrounds.length > 0 && backgrounds[currentBgIndex]
-      ? backgrounds[currentBgIndex].url
-      : defaultBg;
+  const bgUrl = backgrounds.length > 0 && backgrounds[currentBgIndex] ? backgrounds[currentBgIndex].url : defaultBg;
 
   return (
     <div>

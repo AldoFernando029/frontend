@@ -42,9 +42,8 @@ export default function OrderPage() {
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [errorMenu, setErrorMenu] = useState<string>("");
 
-  // ===============================================
   // ✨ FETCH MENU DARI DATABASE (SEKALI SAJA SAAT LOAD)
-  // ===============================================
+
   useEffect(() => {
     async function fetchMenuFromDB() {
       try {
@@ -125,9 +124,9 @@ export default function OrderPage() {
     );
   };
 
-  // ===============================================
+  
   // ✨ FUNGSI KIRIM PESANAN (POST KE MONGODB)
-  // ===============================================
+
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0) {
       alert("Keranjang kosong!");

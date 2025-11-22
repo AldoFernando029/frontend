@@ -4,13 +4,39 @@ import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image"; 
-import "bootstrap/dist/css/bootstrap.min.css"; // JANGAN HAPUS
+import "bootstrap/dist/css/bootstrap.min.css";
 
-// ... (Interface Comment, MenuItem, Background tetap sama) ...
-interface Comment { name: string; text: string; date: string; rating?: number; }
-interface MenuItem { _id?: string; id?: number; name: string; nama?: string; imgSrc: string; gambar?: string; ratingStars?: string; description: string; deskripsi?: string; history?: string; kategori?: string; ingredients?: string; tips?: string; price?: number; harga?: number; }
-interface Background { _id?: string; nama: string; url: string; deskripsi?: string; }
+interface Comment {
+  name: string;
+  text: string;
+  date: string;
+  rating?: number;
+}
 
+interface MenuItem {
+  _id?: string;
+  id?: number;
+  name: string;
+  nama?: string;
+  imgSrc: string;
+  gambar?: string;
+  ratingStars?: string;
+  description: string;
+  deskripsi?: string;
+  history?: string;
+  kategori?: string;
+  ingredients?: string;
+  tips?: string;
+  price?: number;
+  harga?: number;
+}
+
+interface Background {
+  _id?: string;
+  nama: string;
+  url: string;
+  deskripsi?: string;
+}
 
 export default function Home() {
   const router = useRouter();
@@ -23,19 +49,17 @@ export default function Home() {
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredMenu, setFilteredMenu] = useState<MenuItem[]>([]);
-  const [loadingMenu, setLoadingMenu] = useState<boolean>(false);
-  const [backgrounds, setBackgrounds] = useState<Background[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  
-  // LOGIC NAVIGASI MOBILE DIHAPUS DARI SINI
+  const [loadingMenu, setLoadingMenu] = useState<boolean>(false);
+  const [backgrounds, setBackgrounds] = useState<Background[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // FETCH DATA
   useEffect(() => {
     async function fetchData() {
       try {
         setLoadingMenu(true);
+        
         const [menuRes, bgRes] = await Promise.all([
           fetch("/api/menus").catch(() => null),
           fetch("/api/backgrounds").catch(() => null)
@@ -70,7 +94,6 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // SLIDESHOW (Ditinggalkan agar tetap dinamis)
   useEffect(() => {
     if (backgrounds.length === 0) return;
     const timer = setInterval(
@@ -80,8 +103,15 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [backgrounds]);
 
-  // SCROLL LOGIC DIHAPUS (karena memicu error)
-  // LocalStorage Comments (dibiarkan)
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+      setShowScrollTop(window.scrollY > 500);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   useEffect(() => {
     const stored = localStorage.getItem("meimo_comments");
     if (stored) setComments(JSON.parse(stored));
@@ -90,42 +120,77 @@ export default function Home() {
     if (comments.length > 0)
       localStorage.setItem("meimo_comments", JSON.stringify(comments));
   }, [comments]);
-  
-  // Komentar & Search (Ditinggalkan)
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => { /* ... */ };
-  const handleSearch = (e: FormEvent<HTMLFormElement>) => { /* ... */ };
 
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const q = searchQuery.trim().toLowerCase();
+    if (q === "") return;
+    setFilteredMenu((prev) =>
+      prev.filter(
+        (m) =>
+          m.name.toLowerCase().includes(q) ||
+          m.description.toLowerCase().includes(q)
+      )
+    );
+  };
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const name =
+      form.querySelector<HTMLInputElement>("#nama-user")?.value || "Anonim";
+    const text =
+      form
+        .querySelector<HTMLTextAreaElement>("#isi-komentar")
+        ?.value.trim() || "";
+    if (!text) return alert("Komentar tidak boleh kosong!");
+    if (rating === 0) return alert("Silakan berikan rating terlebih dahulu!");
+    const newComment: Comment = {
+      name,
+      text,
+      date: new Date().toLocaleString("id-ID"),
+      rating,
+    };
+    setComments((prev) => [newComment, ...prev]);
+    form.reset();
+    setRating(0);
+  };
 
   const defaultBg = "https://res.cloudinary.com/dgoxc9dmz/image/upload/v1763014752/meimo1_s6uovk.jpg";
   
-  const bgUrl =
-    backgrounds.length > 0 && backgrounds[currentBgIndex]
+  const bgUrl = backgrounds.length > 0 && backgrounds[currentBgIndex]
       ? backgrounds[currentBgIndex].url
       : defaultBg;
 
   return (
     <div>
-      {/* --- NAVBAR RESPONSIVE BARU (Paling atas) --- */}
-      <nav className={`navbar navbar-expand-lg fixed-top py-3 bg-dark text-white`}>
+      {/* --- NAVBAR RESPONSIVE --- */}
+      <nav className={`navbar navbar-expand-lg fixed-top transition-all ${isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-3"}`}>
         <div className="container">
-          <Link href="/" className="navbar-brand fw-bold d-flex align-items-center gap-2 text-white">
+          <Link href="/" className="navbar-brand fw-bold d-flex align-items-center gap-2">
+             <span style={{ color: isScrolled || isMobileMenuOpen ? "#333" : "#fff", fontFamily: "Playfair Display", fontSize: "1.5rem" }}>
                Rasa Manado
+             </span>
           </Link>
+
+          {/* TOMBOL HAMBURGER */}
           <button 
-            className="navbar-toggler border-0 shadow-none text-white" 
+            className="navbar-toggler border-0 shadow-none" 
             type="button" 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{ color: isScrolled || isMobileMenuOpen ? "#333" : "#fff" }}
           >
             {isMobileMenuOpen ? "✕" : "☰"}
           </button>
 
-          <div className={`collapse navbar-collapse ${isMobileMenuOpen ? "show bg-dark p-3 rounded shadow mt-2" : ""}`}>
+          {/* MENU LINKS */}
+          <div className={`collapse navbar-collapse ${isMobileMenuOpen ? "show bg-white p-3 rounded shadow mt-2" : ""}`}>
             <ul className="navbar-nav ms-auto align-items-center gap-3">
-              <li className="nav-item"><Link href="/" className="nav-link text-white fw-medium">Beranda</Link></li>
-              <li className="nav-item"><a href="#menu-gallery" className="nav-link text-white fw-medium">Menu</a></li>
-              <li className="nav-item"><Link href="/admin" className="nav-link text-white fw-medium">Admin</Link></li>
+              <li className="nav-item"><Link href="/" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Beranda</Link></li>
+              <li className="nav-item"><a href="#menu-gallery" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Menu</a></li>
+              <li className="nav-item"><Link href="/admin" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Admin</Link></li>
               <li className="nav-item">
-                <Link href="/order" className="btn btn-warning rounded-pill px-4 fw-bold text-white shadow-sm">
+                <Link href="/order" className="btn btn-warning rounded-pill px-4 fw-bold text-white shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>
                   Dine In / Pesan
                 </Link>
               </li>
@@ -190,7 +255,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* MODAL DETAIL MENU (Dipersingkat) */}
+      {/* MODAL DETAIL MENU */}
       {showModal && selectedMenu && (
         <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.8)", zIndex: 1050 }} tabIndex={-1}>
           <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -200,16 +265,60 @@ export default function Home() {
                 <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
               </div>
               <div className="modal-body p-0">
-                 {/* Detail Menu... */}
+                <div className="row g-0">
+                  <div className="col-lg-6">
+                    <div style={{ height: "400px", position: "relative" }}>
+                       <Image 
+                         src={selectedMenu.imgSrc} 
+                         alt={selectedMenu.name} 
+                         fill 
+                         style={{ objectFit: "cover" }}
+                       />
+                    </div>
+                  </div>
+                  <div className="col-lg-6 p-4 p-lg-5 bg-light">
+                    <h5 className="fw-bold text-primary mb-3">Deskripsi</h5>
+                    <p className="text-muted">{selectedMenu.description}</p>
+                    
+                    {selectedMenu.ingredients && (
+                      <>
+                        <h5 className="fw-bold text-primary mb-2 mt-4">Bahan Utama</h5>
+                        <p className="text-muted small">{selectedMenu.ingredients}</p>
+                      </>
+                    )}
+
+                    <div className="mt-4 p-3 bg-white rounded shadow-sm border-start border-4 border-warning">
+                       <strong>💡 Tips Chef:</strong> {selectedMenu.tips || "Nikmati selagi hangat."}
+                    </div>
+
+                    {/* FORM KOMENTAR SEDERHANA */}
+                    <div className="mt-5 pt-4 border-top">
+                        <h6>Kirim Komentar</h6>
+                        <form onSubmit={handleSubmit} className="mt-2">
+                           <input id="nama-user" className="form-control mb-2" placeholder="Nama Anda" required />
+                           <textarea id="isi-komentar" className="form-control mb-2" rows={2} placeholder="Tulis komentar..." required></textarea>
+                           <div className="d-flex align-items-center justify-content-between">
+                              <div className="rating-input">
+                                {[1,2,3,4,5].map(s => (
+                                  <span key={s} onClick={() => setRating(s)} style={{cursor:"pointer", color: s <= rating ? "#ffc107" : "#ddd", fontSize:"1.5rem"}}>★</span>
+                                ))}
+                              </div>
+                              <button type="submit" className="btn btn-primary btn-sm px-4">Kirim</button>
+                           </div>
+                        </form>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* FOOTER & SCROLL TOP BUTTON (Disatukan) */}
-      <footer className="footer mt-5 pt-5 pb-3 bg-white text-dark border-top">
+      {/* FOOTER & SCROLL TOP BUTTON (FINAL) */}
+      <footer className="footer mt-5 pt-5 pb-3 border-top">
         <div className="container">
+          {/* Bagian Map/Lokasi */}
           <div className="mb-5">
             <h5 className="mb-3 text-center">Lokasi Kami</h5>
             <div className="ratio ratio-21x9">
@@ -224,6 +333,7 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Bagian Info Kontak */}
           <div className="row text-start mt-5">
             <div className="col-lg-4 mb-4 mb-lg-0">
               <h5 className="footer-brand-title fw-bold">Meimo</h5>
@@ -233,7 +343,10 @@ export default function Home() {
               <h5>Jam Operasional</h5>
               <p>Setiap Hari: 10:00 - 22:00</p>
               <h5 className="mt-4">Alamat</h5>
-              <p>Neo Soho Mall, Lantai 4<br />Jakarta Barat, Indonesia 11470</p>
+              <p>
+                Neo Soho Mall, Lantai 4<br />
+                Jakarta Barat, Indonesia 11470
+              </p>
             </div>
             <div className="col-lg-4">
               <h5>Hubungi Kami</h5>
@@ -255,7 +368,7 @@ export default function Home() {
             </div>
           </div>
 
-          <hr className="mt-5 mb-4" style={{ borderColor: "#eee" }} />
+          <hr className="mt-5 mb-4" style={{ borderColor: "#444" }} />
           <p className="text-muted small mb-0 text-center">
             © {new Date().getFullYear()} Meimo Neo Soho. Semua hak cipta dilindungi.
           </p>

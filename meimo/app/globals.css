@@ -1,26 +1,23 @@
 /* ==================================
-  GABUNGAN FINAL globals.css (Bersih & Estetik)
+  GABUNGAN FINAL globals.css (Minimal & Anti-Conflict)
 ==================================
 */
 
 /* 1. Import Font */
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@700;900&display=swap');
 
-/* 2. Variabel Root (Global & Tema) */
+/* 2. Variabel & Global Styles */
 :root {
   --background: #ffffff;
   --foreground: #212529;
   --font-sans: 'Lato', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-heading: 'Playfair Display', serif;
-
   --bs-primary: #008080;
   --bs-warning: #ff8c00;
-  
   --manado-gold: #D4AF37;
   --manado-dark-bg: #2a2a2a;
 }
 
-/* 3. Global Element Styles */
 body {
   background: var(--background);
   color: var(--foreground);
@@ -33,80 +30,54 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==================================
-5. Custom Component Styles 
+3. Layout & Component Core Styles 
 ================================== */
 
-/* Navbar */
-.navbar.fixed-top {
-  transition: background-color 0.3s ease-in-out, padding 0.3s ease-in-out;
-  background-color: transparent;
-  z-index: 9999 !important;
-}
-
-.navbar.scrolled {
-  background-color: rgba(33, 37, 41, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.navbar-brand {
-  font-family: var(--font-heading);
-  font-weight: 900;
-  font-size: 1.75rem;
-  color: var(--manado-gold) !important;
-}
-
-/* Sidebar & Main Content Base Fixes */
+/* Sidebar (Order Page Desktop Fix) */
 .sidebar { 
-  width: 300px !important; 
+  width: 300px;
   position: fixed;
   height: 100vh;
-  z-index: 1000 !important; 
+  z-index: 1000;
+  background-color: white; 
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
-  background-color: white !important; /* Agar sidebar Order Page putih */
   overflow-y: auto;
 }
 
+/* Main Content (Desktop Fix) */
 .main-content {
-  margin-left: 300px !important; 
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
+  /* Margin untuk menggeser konten utama di desktop */
+  margin-left: 300px; 
 }
 
-/* Footer (Final Color Fix) */
+/* Footer Color Fix */
 .footer {
-  background-color: var(--manado-dark-bg, #2a2a2a) !important; 
-  color: #f8f9fa !important;
+  background-color: var(--manado-dark-bg); /* Warna gelap */
+  color: #f8f9fa; /* Teks putih */
   padding: 4rem 0;
 }
 
-.footer h5 {
-  color: var(--manado-gold);
-}
-
-.footer .text-muted {
-  color: #adb5bd !important;
+/* Menu Card Overrides */
+.menu-card {
+  border-radius: 1.5rem; 
+  overflow: hidden; 
+  transition: all 0.3s ease;
 }
 
 /* ==================================
-8. Responsive Design Overrides (CRITICAL)
+4. Responsive Overrides (CRITICAL)
 ================================== */
 
-@media (max-width: 992px) { 
-  .navbar-collapse.show {
-    background: white !important; 
-    padding: 10px;
-    border-radius: 8px;
-  }
-}
-
+/* Fix: Hapus Margin di HP & Sidebar Mobile Drawer */
 @media (max-width: 768px) {
-  /* FIX: Hapus Margin di HP */
+  /* Margin harus nol di HP */
   .main-content { 
     margin-left: 0 !important; 
   }
+  /* Sidebar di HP (untuk toggle) */
+  .sidebar { 
+    width: 80%;
+    z-index: 1060;
+  }
 }
-
-/* FIX: Ensure Desktop margin applies */
-@media (min-width: 769px) {
-  .main-content { margin-left: 300px !important; }
-}
+/* ---------------------------------------------------- */

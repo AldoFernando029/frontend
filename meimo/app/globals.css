@@ -466,3 +466,44 @@ h1, h2, h3, h4, h5, h6 {
     margin-left: 0 !important;
   }
 }
+
+/* FIX: Prevent Next.js Image Flicker (menu-card) */
+.menu-image-container {
+  position: relative;
+  width: 100%;
+  height: 220px;       /* >>> FIX PALING PENTING <<< */
+  overflow: hidden;
+  border-radius: 1.2rem;
+  background-color: #f2f2f2; /* mencegah flash putih saat loading */
+}
+
+.menu-image-container img {
+  object-fit: cover !important;
+  transition: transform 0.3s ease-in-out;
+}
+
+.menu-card:hover .menu-image-container img {
+  transform: scale(1.05);
+}
+
+/* Optional: hilangkan efek transition ALL yang bikin flicker */
+.menu-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Navbar selalu berada di atas gambar */
+.navbar {
+  z-index: 9999 !important;
+  transition: background-color 0.3s ease, padding 0.3s ease;
+}
+
+/* Beri latar blur ketika transparan (agar teks tetap terlihat) */
+.navbar.bg-transparent {
+  background: rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(6px);
+}
+
+/* Perbaiki padding hero agar tidak tertutup navbar */
+.hero-section {
+  padding-top: 100px !important; /* penting */
+}

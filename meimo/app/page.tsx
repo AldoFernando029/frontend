@@ -52,46 +52,51 @@ export default function Home() {
   const [backgrounds, setBackgrounds] = useState<Background[]>([]);
 
   // ============================================================
-  // BAGIAN INI YANG SAYA PERBAIKI (Fetch Data)
+  // PERBAIKAN FETCH DATA (Hanya dari MongoDB/Cloudinary via API)
   // ============================================================
   useEffect(() => {
     async function fetchData() {
       try {
-        // PERBAIKAN: Menggunakan path relative ("/api/...") bukan "http://localhost:5000"
-        // Ini supaya bisa jalan di Vercel (Serverless)
-        
-        // Kita fetch menu dulu karena ini yang paling penting
-        const menuRes = await fetch("/api/menus");
-        
-        // Coba fetch background (pakai catch biar kalau error ga bikin menu ikutan error)
-        const bgResPromise = fetch("/api/backgrounds").catch(() => null); 
-        const bgRes = await bgResPromise;
+        // Menggunakan path relative untuk memanggil API Route Next.js
+        // Ini akan bekerja otomatis baik di localhost maupun Vercel
+        const [bgRes, menuRes] = await Promise.all([
+          fetch("/api/backgrounds").catch(() => null), // Fetch background (opsional)
+          fetch("/api/menus") // Fetch menu (wajib)
+        ]);
 
-        if (!menuRes.ok) throw new Error("Gagal mengambil data menu");
-
-        const menuData = await menuRes.json();
         let bgData = [];
+        let menuData = [];
 
+        // Proses Background
         if (bgRes && bgRes.ok) {
-           try {
-             bgData = await bgRes.json();
-           } catch (e) {
-             console.log("Background API belum siap, pakai default.");
-           }
+          try {
+            bgData = await bgRes.json();
+          } catch (e) {
+            console.log("Gagal parse background JSON");
+          }
         }
 
-        // Gunakan data dari API
+        // Proses Menu
+        if (menuRes.ok) {
+          menuData = await menuRes.json();
+        } else {
+          throw new Error("Gagal mengambil data menu");
+        }
+
+        // Set State Background dari Database
         if (Array.isArray(bgData) && bgData.length > 0) {
           setBackgrounds(bgData);
         }
 
+        // Set State Menu dari Database
         if (Array.isArray(menuData) && menuData.length > 0) {
           setFilteredMenu(
             menuData.map((m: any) => ({
               ...m,
+              // Mapping field agar sesuai interface
               name: m.nama || m.name,
               description: m.deskripsi || m.description || "",
-              // Pastikan gambar diambil dari field yang benar
+              // Pastikan mengambil URL Cloudinary dari field 'gambar'
               imgSrc: m.gambar || m.imgSrc || "/images/placeholder.jpg", 
               ratingStars: "★★★★☆",
               price: m.price || m.harga || 0,
@@ -194,7 +199,7 @@ export default function Home() {
   const bgUrl =
     backgrounds.length > 0
       ? backgrounds[currentBgIndex].url
-      : "/images/background/default.jpg";
+      : "https://res.cloudinary.com/dgoxc9dmz/image/upload/v1763014752/meimo1_s6uovk.jpg"; // Default fallback jika API belum siap
 
   return (
     <div>

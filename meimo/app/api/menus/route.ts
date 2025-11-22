@@ -1,35 +1,48 @@
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
-// Wajib: Agar data selalu fresh
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const MONGO_URI = process.env.MONGODB_URI;
 
-  // 1. Cek Kunci Jawaban (Environment Variable)
+  // 1. Cek apakah Password DB ada
   if (!MONGO_URI) {
-    return NextResponse.json({ error: "FATAL: MONGODB_URI belum disetting di Vercel!" }, { status: 500 });
+    console.error("ERROR: MONGODB_URI tidak ditemukan di Vercel!");
+    return NextResponse.json({ 
+      error: "Konfigurasi Server Belum Lengkap (MONGODB_URI Missing)" 
+    }, { status: 500 });
   }
 
   try {
-    // 2. Koneksi ke Server
+    // 2. Koneksi ke Database 'meimo'
     if (!mongoose.connections[0].readyState) {
-      await mongoose.connect(MONGO_URI);
+      console.log(" Mencoba connect ke MongoDB...");
+      await mongoose.connect(MONGO_URI, { dbName: "meimo" });
+      console.log(" Berhasil Connect!");
     }
 
-    // 3. AKSES LANGSUNG (Tanpa Schema/Model)
-    // Ini intinya: "Pindah ke database 'meimo', lalu buka collection 'menus'"
+    // 3. Ambil Data Langsung (Tanpa Schema)
     const db = mongoose.connection.useDb("meimo");
+    // Pastikan nama collection 'menus' (sesuai screenshot Atlas)
     const rawData = await db.collection("menus").find({}).toArray();
 
-    console.log(` Berhasil ambil ${rawData.length} menu dari database asli.`);
+    console.log(` Data ditemukan: ${rawData.length} item`);
+
+    if (rawData.length === 0) {
+        return NextResponse.json({ 
+            message: "Koneksi Berhasil, tapi Collection 'menus' kosong." 
+        }, { status: 200 }); // Tetap 200 biar frontend tidak error, tapi kosong
+    }
 
     // 4. Kirim Data Asli
     return NextResponse.json(rawData);
 
   } catch (error: any) {
     console.error(" Database Error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+        error: "Gagal mengambil data dari Database", 
+        details: error.message 
+    }, { status: 500 });
   }
 }

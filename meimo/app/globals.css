@@ -1,5 +1,5 @@
 /* ==================================
-  GABUNGAN FINAL globals.css & component styles
+  GABUNGAN FINAL globals.css (Optimized and Verified)
 ==================================
 */
 
@@ -10,16 +10,16 @@
 :root {
   /* Variabel Global */
   --background: #ffffff;
-  --foreground: #212529; /* Warna teks Bootstrap standar */
+  --foreground: #212529;
   --font-sans: 'Lato', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-heading: 'Playfair Display', serif;
 
   /* 🎨 Variabel Tema Khas Manado (Override Bootstrap) */
-  --bs-primary: #008080; /* Teal (Laut) */
+  --bs-primary: #008080;
   --bs-secondary: #6c757d;
   --bs-success: #198754;
   --bs-info: #0dcaf0;
-  --bs-warning: #ff8c00; /* Oranye (Rempah) */
+  --bs-warning: #ff8c00;
   --bs-danger: #dc3545;
   --bs-light: #f8f9fa;
   --bs-dark: #212529;
@@ -431,4 +431,9 @@ h1, h2, h3, h4, h5, h6 {
 .navbar-nav .nav-link {
   position: relative !important;
   z-index: 1000 !important;
+}
+
+/* FIX: Final Check on Sidebar Margin for screens > 768px */
+@media (min-width: 769px) {
+  .main-content { margin-left: 300px !important; }
 }

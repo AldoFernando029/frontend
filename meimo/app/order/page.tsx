@@ -81,9 +81,9 @@ export default function OrderPage() {
   };
 
   
- 
+  // ===============================================
   // ✨ FETCH MENU DARI DATABASE (SEKALI SAJA SAAT LOAD)
- 
+  // ===============================================
   useEffect(() => {
     async function fetchMenuFromDB() {
       try {
@@ -125,9 +125,9 @@ export default function OrderPage() {
     fetchMenuFromDB();
   }, []);
 
-
+  // ===============================================
   // ✨ FUNGSI KIRIM PESANAN (POST KE MONGODB)
-
+  // ===============================================
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0) {
       alert("Keranjang kosong!");
@@ -350,7 +350,7 @@ export default function OrderPage() {
                 <div className="modal-footer-custom">
                   <button className="btn-secondary-custom" onClick={() => setShowCartModal(false)} disabled={isLoading}>Lanjut Belanja</button>
                   <button className="btn-confirm-custom" onClick={handleConfirmOrder} disabled={isLoading}>
-                    {isLoading ? (<><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memproses...</>) : (<><span className="me-2">✓</span>Konfirmasi Pesanan</>)}
+                    {isLoading ? (<><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memproses... </>) : (<><span className="me-2">✓</span>Konfirmasi Pesanan</>)}
                   </button>
                 </div>
               )}

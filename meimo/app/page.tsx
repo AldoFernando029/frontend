@@ -212,13 +212,6 @@ export default function Home() {
           </a>
         </li>
 
-        <li className="nav-item">
-          <Link href="/tentang" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>
-            Tentang
-          </Link>
-        </li>
-      </ul>
-
       {/* KANAN: LOGIN + PESAN */}
       <ul className="navbar-nav ms-auto align-items-center gap-3">
         <li className="nav-item">

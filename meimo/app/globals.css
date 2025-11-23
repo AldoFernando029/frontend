@@ -1,25 +1,36 @@
-/* Final Consolidated Globals.css (Solusi untuk Layout dan Warna) */
-
-/* 1. Import Font */
+/* 1. Import Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@700;900&display=swap');
 
-/* 2. Variabel Root (Global & Tema) */
+/* 2. Root Variables */
 :root {
   --background: #ffffff;
   --foreground: #212529;
+
   --font-sans: 'Lato', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-heading: 'Playfair Display', serif;
+
   --bs-primary: #008080;
   --bs-warning: #ff8c00;
+
+  /* Brand Colors */
   --manado-gold: #D4AF37;
   --manado-dark-bg: #2a2a2a;
+  --color-secondary: #6c757d;
+  --color-dark: #343a40;
+
+  /* Shadow & UI */
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* 3. Global Element Styles */
-body {
+/* 3. Base HTML & Body */
+html, body {
+  margin: 0;
+  padding: 0;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  min-height: 100vh;
+  scroll-behavior: smooth;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -27,71 +38,159 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
 
-/* ==================================
-5. Core Component Styles 
-================================== */
-
-/* Navbar */
+/* 4. Navbar */
 .navbar.fixed-top {
-  transition: background-color 0.3s ease-in-out, padding 0.3s ease-in-out;
+  transition: all 0.3s ease-in-out;
   background-color: transparent;
+  box-shadow: none;
   z-index: 9999 !important;
 }
 
-/* Menu Card Overrides */
-.menu-card {
-  transition: all 0.3s ease;
-  border-radius: 1.5rem; 
-  overflow: hidden; 
+.navbar.scrolled {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: var(--shadow-soft);
 }
 
-/* Sidebar & Main Content Base Fixes */
-.sidebar { 
-  width: 300px !important; /* WAJIB fixed width di desktop */
-  position: fixed;
-  height: 100vh;
-  z-index: 1000 !important; 
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
-  background-color: white !important; /* Agar sidebar terlihat putih */
-  overflow-y: auto;
+/* 5. SECTION: HERO / BANNER */
+.hero {
+  position: relative;
+  height: 90vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-/* Main Content (Desktop Fix) */
-.main-content {
-  /* Margin untuk menggeser konten utama di desktop */
-  margin-left: 300px !important; 
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
 }
 
-/* Footer (Final Color Fix) */
+.hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  top: 50%;
+  transform: translateY(-50%);
+  color: white;
+}
+
+/* 6. Cards  */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 30px rgba(0,0,0,0.12);
+}
+
+/* 7. Footer  */
 .footer {
-  /* Memaksa warna gelap untuk footer home page */
-  background-color: var(--manado-dark-bg, #2a2a2a) !important; 
-  color: #f8f9fa !important; /* Teks putih */
+  background-color: var(--manado-dark-bg) !important;
+  color: #f8f9fa !important;
   padding: 4rem 0;
+  margin-top: 2rem;
 }
 
 .footer h5 {
   color: var(--manado-gold);
 }
 
-/* ==================================
-8. Responsive Design Overrides (CRITICAL)
-================================= */
+/* 8. SIDEBAR */
+.sidebar {
+  width: 300px !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  background: white !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  z-index: 1100 !important;
+  padding-top: 4.5rem; /* agar tidak tertutup navbar */
+}
 
-@media (max-width: 768px) {
-  /* FIX: Hapus Margin di HP */
-  .main-content { 
-    margin-left: 0 !important; 
-  }
-  .sidebar { 
-    width: 80%; /* Lebar sidebar di HP lebih kecil */
-    z-index: 1060;
+/* 9. MAIN CONTENT (Order Page) */
+.main-content {
+  margin-left: 300px !important; /* supaya tidak tertutup sidebar */
+  padding: 1.5rem !important;
+  padding-top: 6rem !important;
+}
+
+/* 10. CATEGORY BUTTONS (baru) */
+.category-btn {
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  color: var(--color-dark);
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 10px;
+  transition: 0.25s ease;
+}
+
+.category-btn.active {
+  background-color: var(--bs-primary) !important;
+  color: white !important;
+}
+
+/* 11. CART SUMMARY (baru) */
+.cart-summary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+}
+
+.cart-summary span,
+.cart-summary strong {
+  color: white !important;
+}
+
+.cart-badge {
+  background: white;
+  color: #667eea !important;
+}
+
+/* 12. RESPONSIVE FIXES */
+@media (max-width: 991px) {
+  .hero {
+    height: 70vh;
   }
 }
 
-/* FIX: Ensure Desktop margin applies (Hanya di layar besar) */
-@media (min-width: 769px) {
-  .main-content { margin-left: 300px !important; }
+@media (max-width: 768px) {
+
+  /* Sidebar → slide menu */
+  .sidebar {
+    width: 80% !important;
+    left: -100%;
+    transition: 0.3s ease;
+    padding-top: 4rem;
+    z-index: 1200 !important;
+  }
+
+  .sidebar.show {
+    left: 0 !important;
+  }
+
+  /* Main content full width */
+  .main-content {
+    margin-left: 0 !important;
+    padding-top: 5rem !important;
+  }
+
+  .navbar-toggler {
+    z-index: 1500;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero {
+    height: 60vh;
+  }
 }

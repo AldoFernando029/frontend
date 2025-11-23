@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image"; 
 import "bootstrap/dist/css/bootstrap.min.css";
 
-// --- INTERFACES LENGKAP
+// --- INTERFACES LENGKAP ---
 interface Comment {
   name: string;
   text: string;
@@ -18,16 +18,16 @@ interface MenuItem {
   _id?: string;
   id?: number;
   name: string; 
-  nama?: string;
-  imgSrc: string;
-  gambar?: string;
+  nama?: string; 
+  imgSrc: string; 
+  gambar?: string; 
   ratingStars?: string;
   description: string;
-  deskripsi?: string;
-  history?: string;        // <--- DIPERBAIKI
+  deskripsi?: string; 
+  history?: string;        
   kategori?: string;
-  ingredients?: string;    // <--- DIPERBAIKI
-  tips?: string;           // <--- DIPERBAIKI
+  ingredients?: string;    
+  tips?: string;           
   price?: number;
   harga?: number;
 }
@@ -39,6 +39,7 @@ interface Background {
   deskripsi?: string;
 }
 // --- AKHIR INTERFACE ---
+
 
 export default function Home() {
   const router = useRouter();
@@ -52,7 +53,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredMenu, setFilteredMenu] = useState<MenuItem[]>([]);
   
-  // LOGIC SCROLL FIX (Dipersingkat)
   const [isScrolled, setIsScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   
@@ -88,10 +88,9 @@ export default function Home() {
               description: m.deskripsi || m.description || "",
               ratingStars: "★★★★☆",
               price: m.harga || m.price || 0,
-              // Pastikan semua field ada untuk Modal
-              history: m.history || m.sejarah || '', 
-              ingredients: m.ingredients || m.bahan || '',
-              tips: m.tips || ''
+              history: m.history || "", 
+              ingredients: m.ingredients || "", 
+              tips: m.tips || "",
             }))
           );
         }
@@ -274,6 +273,14 @@ export default function Home() {
                     <h5 className="fw-bold text-primary mb-3">Deskripsi</h5>
                     <p className="text-muted">{selectedMenu.description}</p>
                     
+                    {/* --- HISTORY SECTION --- */}
+                    {selectedMenu.history && (
+                      <>
+                        <h5 className="fw-bold text-primary mb-2 mt-4">Sejarah Hidangan</h5>
+                        <p className="text-muted small">{selectedMenu.history}</p>
+                      </>
+                    )}
+
                     {selectedMenu.ingredients && (
                       <>
                         <h5 className="fw-bold text-primary mb-2 mt-4">Bahan Utama</h5>
@@ -336,7 +343,7 @@ export default function Home() {
             <div className="col-lg-4 mb-4 mb-lg-0">
               <h5>Jam Operasional</h5>
               <p>Setiap Hari: 10:00 - 22:00</p>
-              <h5 className="mt-4">Alamat</h5>
+              <h5 className className="mt-4">Alamat</h5>
               <p>
                 Neo Soho Mall, Lantai 4<br />
                 Jakarta Barat, Indonesia 11470

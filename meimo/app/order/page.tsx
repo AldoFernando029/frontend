@@ -356,7 +356,7 @@ export default function OrderPage() {
         </div>
       )}
       
-      {/* --- BLOK CSS (HARUS DIHAPUS DARI SINI & DITEMPEL KE globals.css) --- */}
+      {/* BLOK CSS */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap');
 

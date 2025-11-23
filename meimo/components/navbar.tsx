@@ -17,9 +17,9 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const hideNavbar =
+const hideNavbar =
   pathname === "/order" ||
-  pathname === "/meimo/order"; 
+  pathname === "/meimo/order";
 
   // Function to update auth state
   const updateAuthState = () => {

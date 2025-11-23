@@ -156,86 +156,93 @@ export default function Home() {
 
   return (
     <div>
-  <nav
-  className={`navbar navbar-expand-lg fixed-top transition-all ${
-    isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-3"
-  }`}
->
-  <div className="container">
-    {/* BRAND */}
-    <Link
-      href="/"
-      className="navbar-brand fw-bold d-flex align-items-center gap-2"
-    >
-      <span
-        style={{
-          color: isScrolled || isMobileMenuOpen ? "#333" : "#fff",
-          fontFamily: "Playfair Display",
-          fontSize: "1.5rem",
-        }}
+      <nav
+        className={`navbar navbar-expand-lg fixed-top transition-all ${
+          isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-3"
+        }`}
       >
-        Meimo
-      </span>
-    </Link>
-
-    {/* MOBILE TOGGLER */}
-    <button
-      className="navbar-toggler border-0 shadow-none"
-      type="button"
-      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      style={{ color: isScrolled || isMobileMenuOpen ? "#333" : "#fff" }}
-    >
-      {isMobileMenuOpen ? "✕" : "☰"}
-    </button>
-
-    {/* MENU */}
-    <div
-      className={`collapse navbar-collapse ${
-        isMobileMenuOpen ? "show bg-white p-3 rounded shadow mt-2" : ""
-      }`}
-    >
-      {/* KIRI: MENU UTAMA */}
-      <ul className="navbar-nav me-auto align-items-center gap-3">
-        <li className="nav-item">
-          <Link href="/" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>
-            Beranda
-          </Link>
-        </li>
-
-        <li className="nav-item">
-          <a
-            href="#menu-gallery"
-            className="nav-link text-dark fw-medium"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            Menu
-          </a>
-        </li>
-
-      {/* KANAN: LOGIN + PESAN */}
-      <ul className="navbar-nav ms-auto align-items-center gap-3">
-        <li className="nav-item">
+        <div className="container">
+          {/* BRAND */}
           <Link
-            href="/login"
-            className="nav-link text-dark fw-medium"
-            onClick={() => setIsMobileMenuOpen(false)}
+            href="/"
+            className="navbar-brand fw-bold d-flex align-items-center gap-2"
           >
-            Login
+            <span
+              style={{
+                color: isScrolled || isMobileMenuOpen ? "#333" : "#fff",
+                fontFamily: "Playfair Display",
+                fontSize: "1.5rem",
+              }}
+            >
+              Meimo
+            </span>
           </Link>
-        </li>
 
-        <li className="nav-item">
-          <Link
-            href="/order"
-            className="btn btn-warning rounded-pill px-4 fw-bold text-white shadow-sm"
-            onClick={() => setIsMobileMenuOpen(false)}
+          {/* MOBILE TOGGLER */}
+          <button
+            className="navbar-toggler border-0 shadow-none"
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{ color: isScrolled || isMobileMenuOpen ? "#333" : "#fff" }}
           >
-            Dine In / Pesan
-          </Link>
-        </li>
-      </ul>
-    </div>
-</nav>
+            {isMobileMenuOpen ? "✕" : "☰"}
+          </button>
+
+          {/* MENU */}
+          <div
+            className={`collapse navbar-collapse ${
+              isMobileMenuOpen ? "show bg-white p-3 rounded shadow mt-2" : ""
+            }`}
+          >
+            {/* KIRI: MENU UTAMA */}
+            <ul className="navbar-nav me-auto align-items-center gap-3">
+              <li className="nav-item">
+                <Link
+                  href="/"
+                  className="nav-link text-dark fw-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Beranda
+                </Link>
+              </li>
+
+              <li className="nav-item">
+                <a
+                  href="#menu-gallery"
+                  className="nav-link text-dark fw-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Menu
+                </a>
+              </li>
+            </ul>
+
+            {/* KANAN: LOGIN + PESAN */}
+            <ul className="navbar-nav ms-auto align-items-center gap-3">
+              <li className="nav-item">
+                <Link
+                  href="/login"
+                  className="nav-link text-dark fw-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Login
+                </Link>
+              </li>
+
+              <li className="nav-item">
+                <Link
+                  href="/order"
+                  className="btn btn-warning rounded-pill px-4 fw-bold text-white shadow-sm"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Dine In / Pesan
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>  {/* ← INI YANG KAMU LUPA */}
+      </nav>
+
 
       <header
         className="hero-section"

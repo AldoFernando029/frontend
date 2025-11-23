@@ -1,45 +1,42 @@
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
+// Import utilitas koneksi dari lib/mongodb.ts
+
+import dbConnect from "../../../lib/mongodb"; 
 
 export const dynamic = 'force-dynamic';
 
+
+// API GET (Untuk mengambil semua data Menu)
+
 export async function GET() {
-  const MONGO_URI = process.env.MONGODB_URI;
-
-  // 1. Cek apakah Password DB ada
-  if (!MONGO_URI) {
-    console.error("ERROR: MONGODB_URI tidak ditemukan di Vercel!");
-    return NextResponse.json({ 
-      error: "Konfigurasi Server Belum Lengkap (MONGODB_URI Missing)" 
-    }, { status: 500 });
-  }
-
+  
   try {
-    // 2. Koneksi ke Database 'meimo'
-    if (!mongoose.connections[0].readyState) {
-      console.log(" Mencoba connect ke MongoDB...");
-      await mongoose.connect(MONGO_URI, { dbName: "meimo" });
-      console.log(" Berhasil Connect!");
-    }
+    // 1. Panggil utilitas koneksi yang di-cache
+    // Ini akan terhubung atau menggunakan koneksi yang sudah ada (caching)
+    await dbConnect(); 
 
-    // 3. Ambil Data Langsung (Tanpa Schema)
+    // 2. Ambil Data Langsung (Tanpa Schema)
+    // Akses database 'meimo' yang sudah terhubung melalui Mongoose
     const db = mongoose.connection.useDb("meimo");
-    // Pastikan nama collection 'menus' (sesuai screenshot Atlas)
+    
+    // Pastikan nama collection 'menus'
     const rawData = await db.collection("menus").find({}).toArray();
 
-    console.log(` Data ditemukan: ${rawData.length} item`);
+    // console.log(` Data ditemukan: ${rawData.length} item`); // Opsional log
 
     if (rawData.length === 0) {
         return NextResponse.json({ 
             message: "Koneksi Berhasil, tapi Collection 'menus' kosong." 
-        }, { status: 200 }); // Tetap 200 biar frontend tidak error, tapi kosong
+        }, { status: 200 }); // Tetap 200 agar frontend tidak error
     }
 
-    // 4. Kirim Data Asli
+    // 3. Kirim Data Asli
     return NextResponse.json(rawData);
 
   } catch (error: any) {
-    console.error(" Database Error:", error.message);
+    // dbConnect sudah menangani error jika MONGODB_URI missing.
+    console.error("❌ Database Error:", error.message);
     return NextResponse.json({ 
         error: "Gagal mengambil data dari Database", 
         details: error.message 

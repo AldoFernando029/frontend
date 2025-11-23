@@ -1,28 +1,53 @@
-import { MongoClient } from "mongodb";
+import mongoose from "mongoose";
 
-const uri = process.env.MONGODB_URI!;
-const options = {};
+// Ambil URI dari Environment Variable
+const uri: string = process.env.MONGODB_URI!;
+// Database name yang sudah kita konfirmasi
+const DB_NAME = "meimo"; 
 
-if (!process.env.MONGODB_URI) {
-  throw new Error("❌ MONGODB_URI belum di-set di .env.local");
+if (!uri) {
+  throw new Error("❌ MONGODB_URI belum di-set di Environment Variables");
 }
 
-let client;
-let clientPromise: Promise<MongoClient>;
-
+// ⚠️ Perbaikan untuk Next.js Global Caching (Mongoose)
 declare global {
-  var _mongoClientPromise: Promise<MongoClient> | undefined;
+  var mongoose: {
+    conn: typeof mongoose | null;
+    promise: Promise<typeof mongoose> | null;
+  };
 }
 
-if (process.env.NODE_ENV === "development") {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+/**
+ * Fungsi utilitas untuk menghubungkan/mengambil koneksi Mongoose yang sudah di-cache.
+ */
+async function dbConnect() {
+  if (cached.conn) {
+    // Jika koneksi sudah ada di cache, langsung kembalikan
+    return cached.conn;
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  
+  if (!cached.promise) {
+    const opts = {
+      dbName: DB_NAME,
+      bufferCommands: false,
+    };
+    
+    // Cache the promise for connection
+    cached.promise = mongoose.connect(uri, opts).then((mongoose) => {
+      console.log("✅ New Mongoose connection established.");
+      return mongoose;
+    });
+  }
+  
+  // Tunggu promise selesai dan simpan di conn
+  cached.conn = await cached.promise;
+  return cached.conn;
 }
 
-export default clientPromise;
+export default dbConnect;

@@ -1,85 +1,109 @@
+import mongoose from "mongoose";
 import { NextResponse } from "next/server";
-import clientPromise from "../../../lib/mongodb";
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-// POST — SIMPAN ORDER
-export async function POST(req: Request) {
+const MONGO_URI = process.env.MONGODB_URI;
+
+/**
+ * Utility function to connect to MongoDB (or reuse cached connection).
+ * Ensures connection is made to the specific 'meimo' database.
+ * @returns {Promise<boolean>} True if connected, false otherwise (throws error if URI missing).
+ */
+const connectDB = async () => {
+  // Check if connection is already ready (Mongoose caching)
+  if (mongoose.connections[0].readyState) return true;
+  
+  if (!MONGO_URI) {
+    console.error("❌ MONGODB_URI missing. Cannot connect to database.");
+    throw new Error("MONGODB_URI not found.");
+  }
+  
   try {
-    const body = await req.json();
+    // Attempt to connect to the 'meimo' database
+    await mongoose.connect(MONGO_URI, { dbName: "meimo" });
+    return true;
+  } catch (error) {
+    console.error("❌ GAGAL Connect Database:", error);
+    throw error;
+  }
+};
 
-    if (!body.items || !Array.isArray(body.items)) {
-      return NextResponse.json(
-        { success: false, error: "Format items tidak valid" },
-        { status: 400 }
-      );
+
+
+// 1. API GET (Untuk Admin melihat semua pesanan + AUTO-COMPLETE LOGIC)
+
+
+export async function GET() {
+  try {
+    const isConnected = await connectDB();
+    if (!isConnected) {
+        // Jika gagal koneksi (misalnya MONGODB_URI missing), kirim balasan kosong
+        return NextResponse.json([], { status: 200 }); 
     }
 
-    const client = await clientPromise;
-    const db = client.db("meimo-resto");
+    // Akses Collection 'orders'
+    const db = mongoose.connection.useDb("meimo");
+    const collection = db.collection("orders");
 
-    const order = {
-      items: body.items,
-      total: body.total || 0,
-      status: "pending",
-      createdAt: new Date(),
-    };
+    // --- LOGIKA AUTO-COMPLETE (LAZY UPDATE) ---
+    const fifteenSecondsAgo = new Date(Date.now() - 15 * 1000); // 15 detik yang lalu
 
-    const result = await db.collection("orders").insertOne(order);
-
-    return NextResponse.json(
-      { success: true, message: "Pesanan berhasil dibuat", id: result.insertedId },
-      { status: 201 }
+    // Update semua order yang statusnya pending DAN dibuat lebih dari 15 detik yang lalu
+    await collection.updateMany(
+      {
+        status: "pending",
+        createdAt: { $lt: fifteenSecondsAgo } // $lt = Less Than (lebih tua dari)
+      },
+      {
+        $set: { status: "completed" }
+      }
     );
+    // ------------------------------------------
 
-  } catch (err: any) {
-    console.error("❌ Error POST /orders:", err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+    // Ambil semua data orders (terbaru di atas)
+    const orders = await collection.find({}).sort({ createdAt: -1 }).toArray();
+
+    return NextResponse.json(orders);
+
+  } catch (error: any) {
+    console.error("🔥 GAGAL MENGAMBIL DATA ORDER:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
 
 
-// GET — LIST & AUTO COMPLETE
-export async function GET() {
+// 2. API POST (Menerima Pesanan Baru)
+
+export async function POST(req: Request) {
   try {
-    const client = await clientPromise;
-    const db = client.db("meimo-resto");
+    const body = await req.json();
+    const isConnected = await connectDB();
 
-    // Tentukan batas 15 detik
-    const timeout = new Date(Date.now() - 15 * 1000);
+    if (!isConnected) {
+        // Jika DB setup gagal (misal: env var missing), kirim simulasi sukses
+        return NextResponse.json({ message: "Order Success (Simulated)", id: "demo-id" }, { status: 201 });
+    }
 
-    // AUTO COMPLETE — semua pending lebih dari 15 detik
-    await db.collection("orders").updateMany(
-      {
-        status: "pending",
-        createdAt: { $lt: timeout },
-      },
-      {
-        $set: {
-          status: "completed",
-          completedAt: new Date(),
-        },
-      }
-    );
+    // Sambungkan dan akses Collection 'orders'
+    const db = mongoose.connection.useDb("meimo");
+    const collection = db.collection("orders");
 
-    // Ambil semua order
-    const orders = await db
-      .collection("orders")
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray();
+    // Lakukan Insert ke database
+    const result = await collection.insertOne({
+        ...body,
+        status: "pending", // Status awal selalu pending
+        createdAt: new Date() // Menyimpan waktu saat order dibuat
+    });
 
-    return NextResponse.json(orders, { status: 200 });
+    return NextResponse.json({ 
+        message: "Order Berhasil!", 
+        id: result.insertedId 
+    }, { status: 201 });
 
-  } catch (err: any) {
-    console.error("❌ Error GET /orders:", err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error("🔥 GAGAL SIMPAN ORDER:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

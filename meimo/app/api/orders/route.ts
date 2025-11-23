@@ -1,56 +1,62 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "../../../lib/mongodb";
 
-export const dynamic = "force-dynamic"; // GET selalu realtime
+export const dynamic = "force-dynamic";
 
-// POST — BUAT ORDER BARU
-
+// POST — SIMPAN ORDER
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+
+    if (!body.items || !Array.isArray(body.items)) {
+      return NextResponse.json(
+        { success: false, error: "Format items tidak valid" },
+        { status: 400 }
+      );
+    }
+
     const client = await clientPromise;
     const db = client.db("meimo-resto");
 
     const order = {
-      ...body,
+      items: body.items,
+      total: body.total || 0,
       status: "pending",
       createdAt: new Date(),
     };
 
-    const insertResult = await db.collection("orders").insertOne(order);
+    const result = await db.collection("orders").insertOne(order);
 
     return NextResponse.json(
-      {
-        success: true,
-        message: "Order berhasil dibuat",
-        id: insertResult.insertedId,
-      },
+      { success: true, message: "Pesanan berhasil dibuat", id: result.insertedId },
       { status: 201 }
     );
-  } catch (error) {
-    console.error("❌ Error POST /orders:", error);
+
+  } catch (err: any) {
+    console.error("❌ Error POST /orders:", err);
     return NextResponse.json(
-      { success: false, error: (error as Error).message },
+      { success: false, error: err.message },
       { status: 500 }
     );
   }
 }
 
 
-// GET — LIST ORDER + AUTO UPDATE > 15 DETIK
+
+// GET — LIST & AUTO COMPLETE
 export async function GET() {
   try {
     const client = await clientPromise;
     const db = client.db("meimo-resto");
 
-    // waktu 15 detik lalu
-    const limit = new Date(Date.now() - 15 * 1000);
+    // Tentukan batas 15 detik
+    const timeout = new Date(Date.now() - 15 * 1000);
 
-    // AUTO COMPLETE: semua pending > 15 detik → completed
+    // AUTO COMPLETE — semua pending lebih dari 15 detik
     await db.collection("orders").updateMany(
       {
         status: "pending",
-        createdAt: { $lt: limit },
+        createdAt: { $lt: timeout },
       },
       {
         $set: {
@@ -68,10 +74,11 @@ export async function GET() {
       .toArray();
 
     return NextResponse.json(orders, { status: 200 });
-  } catch (error) {
-    console.error("❌ Error GET /orders:", error);
+
+  } catch (err: any) {
+    console.error("❌ Error GET /orders:", err);
     return NextResponse.json(
-      { success: false, error: (error as Error).message },
+      { success: false, error: err.message },
       { status: 500 }
     );
   }

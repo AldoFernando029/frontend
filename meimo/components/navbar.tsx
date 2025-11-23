@@ -17,11 +17,9 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  //  HIDE NAVBAR di halaman order
-const hideNavbar = pathname === "/order";
-
-if (hideNavbar) return null;
-
+  const hideNavbar =
+  pathname === "/order" ||
+  pathname === "/meimo/order"; 
 
   // Function to update auth state
   const updateAuthState = () => {

@@ -1,41 +1,48 @@
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
-// Import utilitas koneksi dari lib/mongodb.ts
-
-import dbConnect from "../../../lib/mongodb"; 
 
 export const dynamic = 'force-dynamic';
 
+const MONGO_URI = process.env.MONGODB_URI;
 
-// API GET (Untuk mengambil semua data Menu)
+/**
+ * Fungsi koneksi database yang lebih sederhana dan anti-cache error.
+ */
+const connectDB = async () => {
+  if (mongoose.connections[0].readyState) return true;
+  
+  if (!MONGO_URI) {
+    throw new Error("MONGODB_URI not found.");
+  }
+  
+  try {
+    await mongoose.connect(MONGO_URI, { dbName: "meimo" });
+    return true;
+  } catch (error) {
+    console.error("❌ GAGAL Connect Database:", error);
+    throw error;
+  }
+};
+
 
 export async function GET() {
   
   try {
-    // 1. Panggil utilitas koneksi yang di-cache
-    // Ini akan terhubung atau menggunakan koneksi yang sudah ada (caching)
-    await dbConnect(); 
-
-    // 2. Ambil Data Langsung (Tanpa Schema)
-    // Akses database 'meimo' yang sudah terhubung melalui Mongoose
-    const db = mongoose.connection.useDb("meimo");
+    await connectDB(); // Panggil fungsi koneksi di awal
     
-    // Pastikan nama collection 'menus'
+    // Ambil Data Langsung (Tanpa Schema)
+    const db = mongoose.connection.useDb("meimo");
     const rawData = await db.collection("menus").find({}).toArray();
-
-    // console.log(` Data ditemukan: ${rawData.length} item`); // Opsional log
 
     if (rawData.length === 0) {
         return NextResponse.json({ 
             message: "Koneksi Berhasil, tapi Collection 'menus' kosong." 
-        }, { status: 200 }); // Tetap 200 agar frontend tidak error
+        }, { status: 200 }); 
     }
 
-    // 3. Kirim Data Asli
     return NextResponse.json(rawData);
 
   } catch (error: any) {
-    // dbConnect sudah menangani error jika MONGODB_URI missing.
     console.error("❌ Database Error:", error.message);
     return NextResponse.json({ 
         error: "Gagal mengambil data dari Database", 

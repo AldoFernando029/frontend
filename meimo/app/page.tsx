@@ -223,7 +223,6 @@ export default function Home() {
                 <Link
                   href="/login"
                   className="nav-link text-dark fw-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Login
                 </Link>

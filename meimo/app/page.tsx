@@ -156,82 +156,94 @@ export default function Home() {
 
   return (
     <div>
-      <nav
-        className={`navbar navbar-expand-lg fixed-top transition-all ${
-          isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-3"
-        }`}
+  <nav
+  className={`navbar navbar-expand-lg fixed-top transition-all ${
+    isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-3"
+  }`}
+>
+  <div className="container">
+    {/* BRAND */}
+    <Link
+      href="/"
+      className="navbar-brand fw-bold d-flex align-items-center gap-2"
+    >
+      <span
+        style={{
+          color: isScrolled || isMobileMenuOpen ? "#333" : "#fff",
+          fontFamily: "Playfair Display",
+          fontSize: "1.5rem",
+        }}
       >
-        <div className="container">
-          <Link
-            href="/"
-            className="navbar-brand fw-bold d-flex align-items-center gap-2"
-          >
-            <span
-              style={{
-                color: isScrolled || isMobileMenuOpen ? "#333" : "#fff",
-                fontFamily: "Playfair Display",
-                fontSize: "1.5rem",
-              }}
-            >
-              Rasa Manado
-            </span>
+        Meimo
+      </span>
+    </Link>
+
+    {/* MOBILE TOGGLER */}
+    <button
+      className="navbar-toggler border-0 shadow-none"
+      type="button"
+      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      style={{ color: isScrolled || isMobileMenuOpen ? "#333" : "#fff" }}
+    >
+      {isMobileMenuOpen ? "✕" : "☰"}
+    </button>
+
+    {/* MENU */}
+    <div
+      className={`collapse navbar-collapse ${
+        isMobileMenuOpen ? "show bg-white p-3 rounded shadow mt-2" : ""
+      }`}
+    >
+      {/* KIRI: MENU UTAMA */}
+      <ul className="navbar-nav me-auto align-items-center gap-3">
+        <li className="nav-item">
+          <Link href="/" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>
+            Beranda
           </Link>
+        </li>
 
-          <button
-            className="navbar-toggler border-0 shadow-none"
-            type="button"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            style={{ color: isScrolled || isMobileMenuOpen ? "#333" : "#fff" }}
+        <li className="nav-item">
+          <a
+            href="#menu-gallery"
+            className="nav-link text-dark fw-medium"
+            onClick={() => setIsMobileMenuOpen(false)}
           >
-            {isMobileMenuOpen ? "✕" : "☰"}
-          </button>
+            Menu
+          </a>
+        </li>
 
-          <div
-            className={`collapse navbar-collapse ${
-              isMobileMenuOpen ? "show bg-white p-3 rounded shadow mt-2" : ""
-            }`}
+        <li className="nav-item">
+          <Link href="/tentang" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>
+            Tentang
+          </Link>
+        </li>
+      </ul>
+
+      {/* KANAN: LOGIN + PESAN */}
+      <ul className="navbar-nav ms-auto align-items-center gap-3">
+        <li className="nav-item">
+          <Link
+            href="/login"
+            className="nav-link text-dark fw-medium"
+            onClick={() => setIsMobileMenuOpen(false)}
           >
-            <ul className="navbar-nav ms-auto align-items-center gap-3">
-              <li className="nav-item">
-                <Link
-                  href="/"
-                  className="nav-link text-dark fw-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Beranda
-                </Link>
-              </li>
-              <li className="nav-item">
-                <a
-                  href="#menu-gallery"
-                  className="nav-link text-dark fw-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Menu
-                </a>
-              </li>
-              <li className="nav-item">
-                <Link
-                  href="/admin"
-                  className="nav-link text-dark fw-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Admin
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  href="/order"
-                  className="btn btn-warning rounded-pill px-4 fw-bold text-white shadow-sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Dine In / Pesan
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </nav>
+            Login
+          </Link>
+        </li>
+
+        <li className="nav-item">
+          <Link
+            href="/order"
+            className="btn btn-warning rounded-pill px-4 fw-bold text-white shadow-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            Dine In / Pesan
+          </Link>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
 
       <header
         className="hero-section"
@@ -481,7 +493,7 @@ export default function Home() {
 
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className={`btn btn-primary rounded-circle бүт ${
+        className={`btn btn-primary rounded-circle ${
           showScrollTop ? "show" : ""
         }`}
       >

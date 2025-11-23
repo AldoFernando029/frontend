@@ -81,9 +81,7 @@ export default function OrderPage() {
   };
 
   
-  // ===============================================
-  // ✨ FETCH MENU DARI DATABASE (SEKALI SAJA SAAT LOAD)
-  // ===============================================
+  // FETCH MENU DARI DATABASE (SEKALI SAJA SAAT LOAD)
   useEffect(() => {
     async function fetchMenuFromDB() {
       try {
@@ -124,9 +122,7 @@ export default function OrderPage() {
     fetchMenuFromDB();
   }, []);
 
-  // ===============================================
-  // ✨ FUNGSI KIRIM PESANAN (POST KE MONGODB)
-  // ===============================================
+  //  FUNGSI KIRIM PESANAN (POST KE MONGODB)
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0) {
       alert("Keranjang kosong!");
@@ -1078,6 +1074,23 @@ export default function OrderPage() {
         .spinner-border {
           animation: pulse 1.5s ease-in-out infinite;
         }
+
+        @media (max-width: 768px) {
+          .main-content {
+          margin-left: 0 !important;
+        }
+
+        .sidebar {
+        position: fixed;
+        z-index: 2000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        }
+
+        .sidebar.d-flex {
+        transform: translateX(0);
+        }
+      }
       `}</style>
   </div>
  );

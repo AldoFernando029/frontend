@@ -1,4 +1,4 @@
-// FILE: meimo/app/page.tsx (VERIFIED FINAL STRUCTURE)
+// FILE: meimo/app/page.tsx 
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
@@ -7,7 +7,6 @@ import Link from "next/link";
 import Image from "next/image"; 
 import "bootstrap/dist/css/bootstrap.min.css";
 
-// --- INTERFACES LENGKAP ---
 interface Comment {
   name: string;
   text: string;
@@ -25,10 +24,10 @@ interface MenuItem {
   ratingStars?: string;
   description: string;
   deskripsi?: string; 
-  history?: string;        // WAJIB ADA
+  history?: string;        
   kategori?: string;
-  ingredients?: string;    // WAJIB ADA
-  tips?: string;           // WAJIB ADA
+  ingredients?: string;    
+  tips?: string;           
   price?: number;
   harga?: number;
 }
@@ -39,7 +38,6 @@ interface Background {
   url: string;
   deskripsi?: string;
 }
-// --- AKHIR INTERFACE ---
 
 
 export default function Home() {
@@ -162,7 +160,7 @@ export default function Home() {
       <nav className={`navbar navbar-expand-lg fixed-top transition-all ${isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-3"}`}>
         <div className="container">
           <Link href="/" className="navbar-brand fw-bold d-flex align-items-center gap-2">
-             <span style={{ color: isScrolled || isMobileMenuOpen ? "#333" : "#fff", fontFamily: "Playfair Display", fontSize: "1.5rem" }}>
+             <span style={{ color: isScrolled || isMobileMenuOpen ? "#333" , fontFamily: "Playfair Display", fontSize: "1.5rem" }}>
                Rasa Manado
              </span>
           </Link>
@@ -183,6 +181,7 @@ export default function Home() {
               <li className="nav-item"><Link href="/" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Beranda</Link></li>
               <li className="nav-item"><a href="#menu-gallery" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Menu</a></li>
               <li className="nav-item">
+                {/* LOGIN LINK YANG HILANG */}
                 <Link href="/login" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>
                   Login
                 </Link>
@@ -255,7 +254,7 @@ export default function Home() {
 
       {/* MODAL DETAIL MENU */}
       {showModal && selectedMenu && (
-        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.8)", zIndex: 1050 }} tabIndex={-1}>
+        <div className className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.8)", zIndex: 1050 }} tabIndex={-1}>
           <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content border-0 rounded-4 overflow-hidden">
               <div className="modal-header bg-white border-0">

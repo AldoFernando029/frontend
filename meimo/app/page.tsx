@@ -1,4 +1,4 @@
-// FILE: meimo/app/page.tsx (FINAL DAN BERSIH)
+// FILE: meimo/app/page.tsx (VERIFIED FINAL STRUCTURE)
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
@@ -182,7 +182,14 @@ export default function Home() {
             <ul className="navbar-nav ms-auto align-items-center gap-3">
               <li className="nav-item"><Link href="/" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Beranda</Link></li>
               <li className="nav-item"><a href="#menu-gallery" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Menu</a></li>
-              <li className="nav-item"><Link href="/admin" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>Admin</Link></li>
+              
+              {/* RESTORASI LOGIN LINK */}
+              <li className="nav-item">
+                <Link href="/login" className="nav-link text-dark fw-medium" onClick={() => setIsMobileMenuOpen(false)}>
+                  Login
+                </Link>
+              </li>
+              
               <li className="nav-item">
                 <Link href="/order" className="btn btn-warning rounded-pill px-4 fw-bold text-white shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>
                   Dine In / Pesan
@@ -239,7 +246,7 @@ export default function Home() {
                   style={{ width: "100%", height: "300px", objectFit: "cover" }}
                   className="card-img-top"
                 />
-                <div className="card-body">
+                <div className card-body>
                   <h5>{menu.name}</h5>
                   <div className="text-warning fs-5 mb-2">{menu.ratingStars}</div>
                 </div>

@@ -4,111 +4,54 @@ export interface User {
   name: string;
 }
 
-// Helper function untuk handle localStorage dengan safe
-const safeLocalStorage = {
-  setItem: (key: string, value: string): boolean => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(key, value);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error setting localStorage:', error);
-      return false;
-    }
+const storageKeyUser = "rasamanado_user";
+const storageKeyToken = "rasamanado_token";
+
+// SAFE localStorage wrapper
+const safe = {
+  get(key: string) {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(key);
   },
-  
-  getItem: (key: string): string | null => {
-    try {
-      if (typeof window !== 'undefined') {
-        return localStorage.getItem(key);
-      }
-      return null;
-    } catch (error) {
-      console.error('Error getting localStorage:', error);
-      return null;
-    }
+  set(key: string, value: string) {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(key, value);
   },
-  
-  removeItem: (key: string): boolean => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(key);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error removing localStorage:', error);
-      return false;
-    }
+  remove(key: string) {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(key);
   }
 };
 
-export const loginUser = (email: string, password: string): boolean => {
-  console.log('🔐 Attempting login for:', email);
-  
+export function loginUser(email: string, password: string): boolean {
   const validUsers = [
-    { email: 'admin@rasamanado.com', password: 'admin123', name: 'Administrator' },
-    { email: 'user@example.com', password: 'user123', name: 'Regular User' }
+    { email: "admin@rasamanado.com", password: "admin123", name: "Administrator" },
+    { email: "user@example.com", password: "user123", name: "Regular User" }
   ];
 
   const user = validUsers.find(u => u.email === email && u.password === password);
-  
-  if (user) {
-    const userData = { email: user.email, name: user.name };
-    const token = 'demo-token-' + Date.now();
-    
-    // Gunakan safeLocalStorage
-    const userSuccess = safeLocalStorage.setItem('rasamanado_user', JSON.stringify(userData));
-    const tokenSuccess = safeLocalStorage.setItem('rasamanado_token', token);
-    
-    if (userSuccess && tokenSuccess) {
-      console.log('✅ Login successful! User:', user.name);
-      return true;
-    } else {
-      console.log('❌ Login failed - localStorage error');
-      return false;
-    }
+  if (!user) return false;
+
+  safe.set(storageKeyUser, JSON.stringify(user));
+  safe.set(storageKeyToken, "token-" + Date.now());
+  return true;
+}
+
+export function logoutUser() {
+  safe.remove(storageKeyUser);
+  safe.remove(storageKeyToken);
+}
+
+export function isLoggedIn(): boolean {
+  return safe.get(storageKeyToken) !== null;
+}
+
+export function getCurrentUser(): User | null {
+  const data = safe.get(storageKeyUser);
+  if (!data) return null;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return null;
   }
-  
-  console.log('❌ Login failed - invalid credentials for:', email);
-  return false;
-};
-
-export const logoutUser = (): void => {
-  console.log('🚪 Logging out...');
-  
-  // Gunakan safeLocalStorage
-  safeLocalStorage.removeItem('rasamanado_user');
-  safeLocalStorage.removeItem('rasamanado_token');
-  
-  console.log('✅ Logout successful');
-};
-
-export const isLoggedIn = (): boolean => {
-  // Gunakan safeLocalStorage
-  const token = safeLocalStorage.getItem('rasamanado_token');
-  const isLoggedIn = !!token;
-  
-  console.log('🔍 isLoggedIn check - token exists:', isLoggedIn);
-  return isLoggedIn;
-};
-
-export const getCurrentUser = (): User | null => {
-  const userStr = safeLocalStorage.getItem('rasamanado_user');
-  
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr);
-      console.log('👤 getCurrentUser:', user.name);
-      return user;
-    } catch (error) {
-      console.error('❌ Error parsing user data:', error);
-      return null;
-    }
-  }
-  
-  console.log('👤 getCurrentUser: no user found');
-  return null;
-};
+}

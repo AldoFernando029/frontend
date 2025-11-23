@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { loginUser, isLoggedIn } from "@/utils/auth";
+import { loginUser, isLoggedIn } from "@/utils/auth"; 
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // 🔥 CEK LOGIN (gunakan isLoggedIn dari utils/auth.ts)
   useEffect(() => {
     if (isLoggedIn()) {
       router.push("/");
@@ -23,16 +24,17 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    // Simulasi loading
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
+    // 🔥 loginUser dari utils akan simpan token + user
     if (loginUser(email, password)) {
-      console.log('✅ Login successful, dispatching authChange event');
-      
-      // 🔥 BARIS YANG DITAMBAHKAN - Dispatch event to notify navbar about login
-      window.dispatchEvent(new Event('authChange'));
-      
-      // Redirect to home
+      console.log("✅ Login successful");
+
+      // 🔥 Notify navbar
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("authChange"));
+      }
+
       router.push("/");
     } else {
       setError("Email atau password salah!");
@@ -42,56 +44,38 @@ export default function LoginPage() {
 
   return (
     <div className="login-container-landscape">
-      {/* Background dengan gradient dan pattern */}
       <div className="login-background-landscape">
         <div className="bg-pattern-landscape"></div>
         <div className="bg-gradient-landscape"></div>
       </div>
 
-      {/* Main Content - Layout Horizontal */}
       <div className="login-content-wrapper">
-        {/* Left Side - Brand/Info */}
+
         <div className="login-brand-section">
           <div className="brand-content">
             <div className="logo-icon-large">🍛</div>
             <h1 className="brand-title">Rasa Manado</h1>
             <p className="brand-subtitle">
-              Jelajahi cita rasa khas Manado dan kisah di baliknya. Masuk untuk mengalami kuliner autentik Sulawesi Utara.
+              Jelajahi cita rasa khas Manado dan kisah di baliknya.
             </p>
             <div className="brand-features">
-              <div className="feature-item">
-                <span className="feature-icon">🌶️</span>
-                <span>Rasa Pedas Khas</span>
-              </div>
-              <div className="feature-item">
-                <span className="feature-icon">🐟</span>
-                <span>Seafood Segar</span>
-              </div>
-              <div className="feature-item">
-                <span className="feature-icon">🍚</span>
-                <span>Masakan Tradisional</span>
-              </div>
+              <div className="feature-item"><span className="feature-icon">🌶️</span> <span>Rasa Pedas Khas</span></div>
+              <div className="feature-item"><span className="feature-icon">🐟</span> <span>Seafood Segar</span></div>
+              <div className="feature-item"><span className="feature-icon">🍚</span> <span>Masakan Tradisional</span></div>
             </div>
           </div>
         </div>
 
-        {/* Right Side - Login Form */}
         <div className="login-form-section">
           <div className="login-card-landscape">
-            {/* Header */}
             <div className="login-header-landscape">
               <h2 className="login-title-landscape">Selamat Datang</h2>
-              <p className="login-subtitle-landscape">
-                Silakan masuk ke akun Anda
-              </p>
+              <p className="login-subtitle-landscape">Silakan masuk ke akun Anda</p>
             </div>
 
-            {/* Login Form */}
             <form onSubmit={handleLogin} className="login-form-landscape">
               <div className="form-group-landscape">
-                <label htmlFor="email" className="form-label-landscape">
-                  📧 Email Address
-                </label>
+                <label htmlFor="email" className="form-label-landscape">📧 Email Address</label>
                 <input
                   type="email"
                   id="email"
@@ -104,9 +88,7 @@ export default function LoginPage() {
               </div>
 
               <div className="form-group-landscape">
-                <label htmlFor="password" className="form-label-landscape">
-                  🔒 Password
-                </label>
+                <label htmlFor="password" className="form-label-landscape">🔒 Password</label>
                 <input
                   type="password"
                   id="password"
@@ -118,21 +100,16 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Error Message */}
               {error && (
-                <div className="error-message-landscape">
-                  ⚠️ {error}
-                </div>
+                <div className="error-message-landscape">⚠️ {error}</div>
               )}
 
-              {/* Demo Credentials */}
               <div className="demo-credentials-landscape">
                 <strong>Demo Account:</strong><br />
                 Email: <span>admin@rasamanado.com</span><br />
                 Password: <span>admin123</span>
               </div>
 
-              {/* Login Button */}
               <button 
                 type="submit" 
                 className="login-button-landscape"
@@ -144,12 +121,11 @@ export default function LoginPage() {
                     Memproses...
                   </>
                 ) : (
-                  '🚀 Masuk ke Dashboard'
+                  "🚀 Masuk ke Dashboard"
                 )}
               </button>
             </form>
 
-            {/* Footer */}
             <div className="login-footer-landscape">
               <Link href="/" className="back-link-landscape">
                 ← Kembali ke Beranda
@@ -157,9 +133,9 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
+
       </div>
 
-      {/* Decorative Elements */}
       <div className="floating-element-landscape element-1">🌶️</div>
       <div className="floating-element-landscape element-2">🍚</div>
       <div className="floating-element-landscape element-3">🐟</div>

@@ -1,12 +1,22 @@
-export const metadata = {
-  title: "Login - Rasa Manado",
-  description: "Halaman login untuk website Rasa Manado",
-};
+"use client";
 
-export default function LoginLayout({ children }: { children: React.ReactNode }) {
+import { usePathname } from "next/navigation";
+
+export default function RootLayout({ children }) {
+  const pathname = usePathname();
+
+  const hideNavbar =
+    pathname === "/order" ||
+    pathname === "/meimo/order";
+
   return (
-    <>
-      {children}
-    </>
+    <html lang="en">
+      <body>
+        {!hideNavbar && (
+          <Navbar />
+        )}
+        {children}
+      </body>
+    </html>
   );
 }

@@ -97,7 +97,7 @@ export default function Home() {
         <div className="container">
           <Link href="/" className="navbar-brand fw-bold d-flex align-items-center gap-2">
              {/* FIX SYNTAX: Isolate the color expression with parentheses */}
-             <span style={{ color: (isScrolled || isMobileMenuOpen) ? "#333" , fontFamily: "Playfair Display", fontSize: "1.5rem" }}> 
+             <span style={{ color: (isScrolled || isMobileMenuOpen) ? "#333" : "#fff", fontFamily: "Playfair Display", fontSize: "1.5rem" }}> 
                Rasa Manado
              </span>
           </Link>

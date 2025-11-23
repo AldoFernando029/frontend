@@ -1,5 +1,3 @@
-// page.tsx lengkap (struktur tetap, hanya perbaikan kecil seperti key tidak random)
-
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
@@ -69,8 +67,8 @@ export default function Home() {
           fetch("/api/backgrounds").catch(() => null),
         ]);
 
-        let menuData: MenuItem[] = [];
-        let bgData: Background[] = [];
+        let menuData: any[] = [];
+        let bgData: any[] = [];
 
         if (menuRes && menuRes.ok) menuData = await menuRes.json();
         if (bgRes && bgRes.ok) bgData = await bgRes.json();
@@ -79,7 +77,7 @@ export default function Home() {
 
         if (Array.isArray(menuData) && menuData.length > 0) {
           setFilteredMenu(
-            menuData.map((m: MenuItem) => ({
+            menuData.map((m: any) => ({
               ...m,
               name: m.nama || m.name || "Tanpa Nama",
               imgSrc: m.gambar || m.imgSrc || "/images/placeholder.jpg",
@@ -277,12 +275,12 @@ export default function Home() {
                 }}
               >
                 <div className="card menu-card shadow">
-                  <Image
+                  <img
                     src={menu.imgSrc}
                     alt={menu.name}
-                    width={400}
-                    height={300}
                     style={{
+                      width: "100%",
+                      height: "300px",
                       objectFit: "cover",
                     }}
                     className="card-img-top"
@@ -315,7 +313,6 @@ export default function Home() {
                 <button
                   type="button"
                   className="btn-close"
-                  aria-label="Close"
                   onClick={() => setShowModal(false)}
                 ></button>
               </div>
@@ -484,10 +481,13 @@ export default function Home() {
 
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className={`btn btn-primary rounded-circle ${showScrollTop ? "show" : ""}`}
+        className={`btn btn-primary rounded-circle бүт ${
+          showScrollTop ? "show" : ""
+        }`}
       >
         ↑
       </button>
     </div>
   );
 }
+

@@ -1,3 +1,4 @@
+// FILE: lib/mongodb.ts (FINAL Mongoose Caching Fix)
 import mongoose from "mongoose";
 
 // Ambil URI dari Environment Variable
@@ -9,7 +10,8 @@ if (!uri) {
   throw new Error("❌ MONGODB_URI belum di-set di Environment Variables");
 }
 
-// ⚠️ Perbaikan untuk Next.js Global Caching (Mongoose)
+// ⚠️ PERBAIKAN: Definisi Tipe Global untuk Caching
+// Kita simpan koneksi (conn) dan promise (promise)
 declare global {
   var mongoose: {
     conn: typeof mongoose | null;

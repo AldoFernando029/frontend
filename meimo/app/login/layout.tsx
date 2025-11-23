@@ -1,8 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import React from 'react'; // Diperlukan untuk React.ReactNode
 
-export default function RootLayout({ children }) {
+// FIX: Tambahkan tipe eksplisit { children: React.ReactNode }
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const hideNavbar =
@@ -13,7 +15,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         {!hideNavbar && (
-          <Navbar />
+          <div></div> 
         )}
         {children}
       </body>

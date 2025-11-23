@@ -17,12 +17,11 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 🚫 HIDE NAVBAR di halaman order
-  const hideNavbar =
-    pathname.startsWith("/meimo/order") ||
-    pathname.startsWith("/order");
+  //  HIDE NAVBAR di halaman order
+const hideNavbar = pathname === "/order";
 
-  if (hideNavbar) return null; // <---- MAGIC FIXED HERE
+if (hideNavbar) return null;
+
 
   // Function to update auth state
   const updateAuthState = () => {

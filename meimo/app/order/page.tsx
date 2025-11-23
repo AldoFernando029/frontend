@@ -356,7 +356,7 @@ export default function OrderPage() {
         </div>
       )}
       
-      {/* BLOK CSS */}
+      {/* --- BLOK CSS (HARUS DIHAPUS DARI SINI & DITEMPEL KE globals.css) --- */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap');
 
@@ -1074,23 +1074,6 @@ export default function OrderPage() {
         .spinner-border {
           animation: pulse 1.5s ease-in-out infinite;
         }
-
-        @media (max-width: 768px) {
-          .main-content {
-          margin-left: 0 !important;
-        }
-
-        .sidebar {
-        position: fixed;
-        z-index: 2000;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-        }
-
-        .sidebar.d-flex {
-        transform: translateX(0);
-        }
-      }
       `}</style>
   </div>
  );

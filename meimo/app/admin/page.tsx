@@ -99,7 +99,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // HANDLE SAVE (ADD / EDIT) - DIPERBAIKI
+  // --- FUNGSI SAVE (ADD & EDIT) YANG SUDAH DIPERBAIKI ---
   const handleSaveMenu = async () => {
     if (!editingMenu) return;
 
@@ -110,13 +110,12 @@ export default function AdminDashboard() {
     }
 
     try {
-      // Cek apakah ini Edit atau Baru berdasarkan keberadaan ID
+      // Cek apakah ini Edit atau Baru
+      // Jika _id ada isinya, berarti Edit. Jika kosong/undefined, berarti Baru.
       const isEdit = editingMenu._id && editingMenu._id.trim() !== ""; 
       const method = isEdit ? "PUT" : "POST";
       
-      // Siapkan data payload
-      // PENTING: Jangan kirim field 'id'/'_id' jika kosong (New Data), 
-      // karena backend MongoDB bisa error parsing empty string ke ObjectId.
+      // Siapkan payload data
       const menuData: any = {
         nama: editingMenu.nama,
         kategori: editingMenu.kategori,
@@ -131,7 +130,8 @@ export default function AdminDashboard() {
         tips: editingMenu.tips
       };
 
-      // Hanya tambahkan ID jika ini proses EDIT
+      // PENTING: Hanya masukkan ID ke payload jika ini adalah EDIT.
+      // Jika POST (Baru), jangan kirim ID agar Backend/DB membuatnya otomatis.
       if (isEdit) {
         menuData.id = editingMenu._id;
       }
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
         body: JSON.stringify(menuData),
       });
 
-      // Baca respon sebagai teks dulu untuk menghindari crash JSON
+      // Baca respon sebagai teks dulu (Anti Crash JSON)
       const responseText = await res.text();
 
       try {
@@ -157,8 +157,8 @@ export default function AdminDashboard() {
           throw new Error(jsonResponse.message || "Gagal menyimpan menu");
         }
       } catch (jsonError) {
-        console.error("Server Response Raw:", responseText);
-        throw new Error("Gagal menyimpan. Respon server bukan JSON valid (Cek console).");
+        console.error("Server Response Error:", responseText);
+        throw new Error("Gagal menyimpan. Respon server tidak valid.");
       }
 
     } catch (error: any) {
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // HANDLE DELETE - DIPERBAIKI
+  // --- FUNGSI DELETE YANG SUDAH DIPERBAIKI ---
   const handleDeleteMenu = async (id: string) => {
     if (!id) return;
     if (!confirm("Yakin ingin menghapus menu ini?")) return;

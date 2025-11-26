@@ -2,8 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-// Pastikan path import ini benar sesuai struktur folder utils 
-import { loginUser, isLoggedIn } from "@/utils/auth"; 
+import { loginUser, isLoggedIn, logoutUser } from "@/utils/auth"; // Pastikan import logoutUser
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -13,28 +12,37 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🔥 CEK LOGIN
+  // 🔥 UPDATE: Hapus useEffect yang auto-redirect jika sudah login.
   useEffect(() => {
-    // Pastikan isLoggedIn tidak error jika dijalankan di server (tambahkan pengecekan window jika perlu di utils)
+    // agar user bisa login ulang tanpa terlempar
     if (isLoggedIn()) {
-      router.push("/");
+       // logoutUser(); // Uncomment baris ini jika ingin auto-logout saat visit /login
     }
-  }, [router]);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
+    // Simulasi loading
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 🔥 loginUser logic
     if (loginUser(email, password)) {
       console.log("✅ Login successful");
+
+      // Notify navbar/app state
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("authChange"));
       }
-      router.push("/");
+
+      // Redirect ke Admin atau Home
+      // Jika user admin, arahkan ke dashboard admin
+      if (email === "admin@rasamanado.com") {
+          router.push("/admin");
+      } else {
+          router.push("/");
+      }
     } else {
       setError("Email atau password salah!");
       setIsLoading(false);
@@ -42,7 +50,6 @@ export default function LoginPage() {
   };
 
   return (
-    // Class CSS
     <div className="login-container-landscape">
       <div className="login-background-landscape">
         <div className="bg-pattern-landscape"></div>
@@ -50,6 +57,7 @@ export default function LoginPage() {
       </div>
 
       <div className="login-content-wrapper">
+
         <div className="login-brand-section">
           <div className="brand-content">
             <div className="logo-icon-large">🍛</div>
@@ -132,7 +140,15 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
+
       </div>
+
+      <div className="floating-element-landscape element-1">🌶️</div>
+      <div className="floating-element-landscape element-2">🍚</div>
+      <div className="floating-element-landscape element-3">🐟</div>
+      <div className="floating-element-landscape element-4">🍋</div>
+      <div className="floating-element-landscape element-5">🥥</div>
+      <div className="floating-element-landscape element-6">🦐</div>
     </div>
   );
 }

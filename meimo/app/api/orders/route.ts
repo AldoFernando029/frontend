@@ -3,13 +3,13 @@ import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
-const MONGO_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI;
 
 /*Fungsi koneksi database yang lebih sederhana dan anti-cache error.*/
 const connectDB = async () => {
   if (mongoose.connections[0].readyState) return true;
   
-  if (!MONGO_URI) {
+  if (!MONGODB_URI) {
     throw new Error("MONGODB_URI not found.");
   }
   

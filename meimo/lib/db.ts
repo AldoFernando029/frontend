@@ -26,7 +26,7 @@ export const connectDB = async () => {
     const opts = {
       bufferCommands: false,
     };
-    cached.promise = mongoose.connect(MONGO_URI, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
       return mongoose;
     });
   }

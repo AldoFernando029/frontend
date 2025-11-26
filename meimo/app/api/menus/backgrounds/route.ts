@@ -4,9 +4,9 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const MONGO_URI = process.env.MONGODB_URI;
+  const MONGODB_URI = process.env.MONGODB_URI;
 
-  if (!MONGO_URI) {
+  if (!MONGODB_URI) {
     return NextResponse.json({ error: "MONGODB_URI belum disetting!" }, { status: 500 });
   }
 

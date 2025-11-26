@@ -1,86 +1,50 @@
-// app/api/menus/route.ts
+import mongoose from "mongoose";
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db"; // Pastikan path ini sesuai lokasi file db.ts
-import Menu from "@/models/Menu";     // Pastikan path ini sesuai lokasi file Menu.ts
 
-// 1. GET: Ambil Semua Menu (Untuk menampilkan list)
+export const dynamic = 'force-dynamic';
+
+const MONGODB_URI = process.env.MONGODB_URI;
+
+/*Fungsi koneksi database yang lebih sederhana dan anti-cache error */
+const connectDB = async () => {
+  if (mongoose.connections[0].readyState) return true;
+  
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI not found.");
+  }
+  
+  try {
+    await mongoose.connect(MONGODB_URI, { dbName: "meimo" });
+    return true;
+  } catch (error) {
+    console.error("❌ GAGAL Connect Database:", error);
+    throw error;
+  }
+};
+
+
 export async function GET() {
+  
   try {
-    await connectDB();
-    const menus = await Menu.find().sort({ createdAt: -1 }); // Urutkan dari yang terbaru
-    return NextResponse.json(menus);
-  } catch (error) {
-    return NextResponse.json({ message: "Gagal mengambil data menu" }, { status: 500 });
-  }
-}
-
-// 2. POST: Tambah Menu Baru (Untuk tombol Add)
-export async function POST(request: Request) {
-  try {
-    await connectDB();
-    const body = await request.json();
-
-    // Validasi dasar
-    if (!body.nama || !body.harga) {
-      return NextResponse.json({ message: "Nama dan Harga wajib diisi" }, { status: 400 });
-    }
-
-    // Buat menu baru
-    const newMenu = await Menu.create(body);
+    await connectDB(); // Panggil fungsi koneksi di awal
     
-    return NextResponse.json({ message: "Menu berhasil dibuat", data: newMenu }, { status: 201 });
-  } catch (error) {
-    console.error("Error POST:", error);
-    return NextResponse.json({ message: "Gagal menambahkan menu" }, { status: 500 });
-  }
-}
+    // Ambil Data Langsung (Tanpa Schema)
+    const db = mongoose.connection.useDb("meimo");
+    const rawData = await db.collection("menus").find({}).toArray();
 
-// 3. PUT: Edit Menu (Untuk tombol Save saat Edit)
-export async function PUT(request: Request) {
-  try {
-    await connectDB();
-    const body = await request.json();
-    const { id, ...updateData } = body;
-
-    if (!id) {
-      return NextResponse.json({ message: "ID tidak ditemukan" }, { status: 400 });
+    if (rawData.length === 0) {
+        return NextResponse.json({ 
+            message: "Koneksi Berhasil, tapi Collection 'menus' kosong." 
+        }, { status: 200 }); 
     }
 
-    const updatedMenu = await Menu.findByIdAndUpdate(id, updateData, { new: true });
+    return NextResponse.json(rawData);
 
-    if (!updatedMenu) {
-      return NextResponse.json({ message: "Menu tidak ditemukan" }, { status: 404 });
-    }
-
-    return NextResponse.json({ message: "Menu berhasil diupdate", data: updatedMenu });
-  } catch (error) {
-    console.error("Error PUT:", error);
-    return NextResponse.json({ message: "Gagal update menu" }, { status: 500 });
-  }
-}
-
-// 4. DELETE: Hapus Menu (Untuk tombol Remove)
-export async function DELETE(request: Request) {
-  try {
-    await connectDB();
-    
-    // Ambil ID dari URL (contoh: /api/menus?id=12345)
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json({ message: "ID diperlukan untuk menghapus" }, { status: 400 });
-    }
-
-    const deletedMenu = await Menu.findByIdAndDelete(id);
-
-    if (!deletedMenu) {
-      return NextResponse.json({ message: "Menu tidak ditemukan" }, { status: 404 });
-    }
-
-    return NextResponse.json({ message: "Menu berhasil dihapus" });
-  } catch (error) {
-    console.error("Error DELETE:", error);
-    return NextResponse.json({ message: "Gagal menghapus menu" }, { status: 500 });
+  } catch (error: any) {
+    console.error("❌ Database Error:", error.message);
+    return NextResponse.json({ 
+        error: "Gagal mengambil data dari Database", 
+        details: error.message 
+    }, { status: 500 });
   }
 }

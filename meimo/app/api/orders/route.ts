@@ -15,7 +15,7 @@ const connectDB = async () => {
   
   try {
     // Attempt to connect to the 'meimo' database
-    await mongoose.connect(MONGO_URI, { dbName: "meimo" });
+    await mongoose.connect(MONGODB_URI, { dbName: "meimo" });
     return true;
   } catch (error) {
     console.error("❌ GAGAL Connect Database:", error);

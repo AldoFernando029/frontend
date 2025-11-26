@@ -154,9 +154,12 @@ export default function Home() {
       ? backgrounds[currentBgIndex].url
       : defaultBg;
 
+  // Helper untuk warna teks navbar agar tidak sembunyi
+  const navTextColor = isScrolled || isMobileMenuOpen ? "text-dark" : "text-white";
+
   return (
     <div>
-      {/* NAVBAR (Langsung di sini agar tidak muncul di login page) */}
+      {/* NAVBAR */}
       <nav
         className={`navbar navbar-expand-lg fixed-top transition-all ${
           isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-3"
@@ -196,7 +199,7 @@ export default function Home() {
               <li className="nav-item">
                 <Link
                   href="/"
-                  className="nav-link text-dark fw-medium"
+                  className={`nav-link fw-medium ${navTextColor}`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Beranda
@@ -205,20 +208,20 @@ export default function Home() {
               <li className="nav-item">
                 <a
                   href="#menu-gallery"
-                  className="nav-link text-dark fw-medium"
+                  className={`nav-link fw-medium ${navTextColor}`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Menu
                 </a>
               </li>
               <li className="nav-item">
-                <Link
+                {/* 🔥 PENTING: Menggunakan <a> agar halaman dipaksa reload dan Login Page pasti muncul */}
+                <a
                   href="/login"
-                  className="nav-link text-dark fw-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`nav-link fw-medium ${navTextColor}`}
                 >
                   Login
-                </Link>
+                </a>
               </li>
               <li className="nav-item">
                 <Link

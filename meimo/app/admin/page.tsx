@@ -42,32 +42,26 @@ export default function AdminDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
- 
-  // PERBAIKAN 1: LOGIC AUTO REFRESH (Auto Complete Trigger)
+  
+  // LOGIC AUTO REFRESH
 
   useEffect(() => {
-    // 1. Ambil data saat pertama kali buka
     fetchData(false); // false = pakai loading spinner
 
-    // 2. Refresh data setiap 5 detik (Background)
-    // Ini akan memicu backend untuk mengubah status menjadi 'completed'
     const intervalId = setInterval(() => {
-      fetchData(true); // true = background (tanpa loading spinner)
+      fetchData(true); // true = background
     }, 5000);
 
-    // Bersihkan timer saat pindah halaman
     return () => clearInterval(intervalId);
   }, []);
 
   
-  // PERBAIKAN 2: FETCH DATA (Relative Path & Background Mode)
+  // FETCH DATA
 
   const fetchData = async (isBackground = false) => {
     try {
-      // Hanya tampilkan spinner jika bukan auto-refresh
       if (!isBackground) setLoading(true);
 
-      // Ganti http://localhost:5000 menjadi /api/... agar jalan di Vercel
       const [menuRes, orderRes] = await Promise.all([
         fetch("/api/menus"),
         fetch("/api/orders"),
@@ -86,7 +80,7 @@ export default function AdminDashboard() {
             kategori: item.kategori || item.category || item.Category || 'Makanan Utama',
             harga: Number(priceValue) || 0,
             biaya: Number(costValue) || 0,
-            stok: Number(item.stok || item.stock || item.Stock || 100),
+            stok: Number(item.stok || item.stock || item.Stock || 0),
             deskripsi: item.deskripsi || item.description || item.Description || '',
             gambar: item.gambar || item.image || item.imgSrc || item.Image || '',
             ratingStars: item.ratingStars || item.rating || item.Rating || '★★★★☆',
@@ -111,22 +105,24 @@ export default function AdminDashboard() {
     }
   };
 
+  // --- PERBAIKAN UTAMA PADA FUNGSI SAVE ---
   const handleSaveMenu = async () => {
     if (!editingMenu) return;
 
-    if (!editingMenu.nama || !editingMenu.kategori || editingMenu.harga <= 0) {
-      showMessage("warning", "Mohon lengkapi field yang wajib diisi!");
+    // Validasi sederhana
+    if (!editingMenu.nama || !editingMenu.kategori) {
+      showMessage("warning", "Mohon lengkapi Nama Menu dan Kategori!");
       return;
     }
 
     try {
-      const method = editingMenu._id ? "PUT" : "POST";
-      // PERBAIKAN PATH
-      const url = editingMenu._id
-        ? `/api/menus/${editingMenu._id}` // Pake ID kalau edit (tapi kita belum bikin route ID, jadi ini mungkin akan 404 kalau route [id] belum dibuat)
-        : "/api/menus"; // Kalau add baru ke root menu
+      // Tentukan Method: Jika punya _id berarti EDIT (PUT), jika tidak berarti BARU (POST)
+      const isEdit = !!editingMenu._id;
+      const method = isEdit ? "PUT" : "POST";
       
+      // Siapkan payload data yang bersih (pastikan angka adalah number)
       const menuData = {
+        id: editingMenu._id, // Kirim ID jika edit (opsional tergantung backend, tapi aman disertakan)
         nama: editingMenu.nama,
         kategori: editingMenu.kategori,
         harga: Number(editingMenu.harga),
@@ -140,15 +136,16 @@ export default function AdminDashboard() {
         tips: editingMenu.tips
       };
 
-      const res = await fetch("/api/menus", { // Sementara tembak ke POST utama dulu kalau edit belum handle ID
-        method: "POST", // Paksa POST dulu kalau route [id] belum ada, atau sesuaikan nanti
+      // Tetap gunakan path /api/menus sesuai permintaan (Backend harus handle PUT/POST di route ini)
+      const res = await fetch("/api/menus", {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(menuData),
       });
 
       if (res.ok) {
-        showMessage("success", editingMenu._id ? "✅ Menu berhasil diupdate!" : "✅ Menu berhasil ditambahkan!");
-        fetchData(true); // Refresh data background
+        showMessage("success", isEdit ? "✅ Menu berhasil diupdate!" : "✅ Menu berhasil ditambahkan!");
+        fetchData(true); // Refresh data
         setShowModal(false);
         setEditingMenu(null);
       } else {
@@ -165,8 +162,6 @@ export default function AdminDashboard() {
     if (!confirm("Yakin ingin menghapus menu ini?")) return;
 
     try {
-      // PERBAIKAN PATH
-      // Note: Pastikan kamu punya route DELETE di api/menus
       const res = await fetch(`/api/menus?id=${id}`, { 
         method: "DELETE",
       });
@@ -182,10 +177,8 @@ export default function AdminDashboard() {
 
   const handleCompleteOrder = async (orderId: string) => {
     try {
-      // PERBAIKAN PATH
-      // Note: Logika complete manual (bukan auto) butuh route PUT/PATCH. 
       const res = await fetch(`/api/orders`, {
-        method: "PUT", // Kirim ke route utama, nanti backend handle by ID di body/query
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: orderId, status: "completed" }),
       });
@@ -476,7 +469,7 @@ export default function AdminDashboard() {
                     kategori: "Makanan Utama",
                     harga: 0,
                     biaya: 0,
-                    stok: 100,
+                    stok: 10, // Default stok di set 10
                     deskripsi: "",
                     gambar: "",
                     ratingStars: "★★★★☆",
@@ -801,9 +794,10 @@ export default function AdminDashboard() {
                           transition: "all 0.3s"
                         }}
                         value={editingMenu.harga}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, harga: Number(e.target.value) || 0 })}
+                        onChange={(e) => setEditingMenu({ ...editingMenu, harga: Number(e.target.value) })}
                         min="0"
                         step="1000"
+                        placeholder="0"
                       />
                       <small style={{
                         background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -825,9 +819,10 @@ export default function AdminDashboard() {
                           transition: "all 0.3s"
                         }}
                         value={editingMenu.biaya}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, biaya: Number(e.target.value) || 0 })}
+                        onChange={(e) => setEditingMenu({ ...editingMenu, biaya: Number(e.target.value) })}
                         min="0"
                         step="1000"
+                        placeholder="0"
                       />
                       <small className="text-success fw-bold">
                         💰 Profit/item: {formatCurrency(editingMenu.harga - editingMenu.biaya)}
@@ -846,8 +841,9 @@ export default function AdminDashboard() {
                           transition: "all 0.3s"
                         }}
                         value={editingMenu.stok}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, stok: Number(e.target.value) || 0 })}
+                        onChange={(e) => setEditingMenu({ ...editingMenu, stok: Number(e.target.value) })}
                         min="0"
+                        placeholder="0"
                       />
                     </div>
 
@@ -862,7 +858,7 @@ export default function AdminDashboard() {
                           padding: "0.8rem",
                           transition: "all 0.3s"
                         }}
-                        placeholder="/images/menu/namafile.jpg"
+                        placeholder="https://..."
                         value={editingMenu.gambar}
                         onChange={(e) => setEditingMenu({ ...editingMenu, gambar: e.target.value })}
                       />

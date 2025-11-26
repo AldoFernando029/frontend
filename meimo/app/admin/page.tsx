@@ -44,7 +44,7 @@ export default function AdminDashboard() {
 
   //  LOGIC AUTO REFRESH 
   useEffect(() => {
-    fetchData(false); // false = pakai loading spinner
+    fetchData(false); // false = pakai loading spinner awal
 
     const intervalId = setInterval(() => {
       fetchData(true); // true = background refresh
@@ -66,26 +66,21 @@ export default function AdminDashboard() {
       if (menuRes.ok) {
         const menuData = await menuRes.json();
         
-        // Normalisasi data agar aman dari perbedaan penamaan di backend
-        const normalizedMenuData = menuData.map((item: any) => {
-          const priceValue = item.harga || item.price || item.Price || 0;
-          const costValue = item.biaya || item.cost || item.Cost || 0;
-          
-          return {
-            _id: item._id || item.id,
-            nama: item.nama || item.name || item.Name || '',
-            kategori: item.kategori || item.category || item.Category || 'Makanan Utama',
-            harga: Number(priceValue) || 0,
-            biaya: Number(costValue) || 0,
-            stok: Number(item.stok || item.stock || item.Stock || 0),
-            deskripsi: item.deskripsi || item.description || item.Description || '',
-            gambar: item.gambar || item.image || item.imgSrc || item.Image || '',
-            ratingStars: item.ratingStars || item.rating || item.Rating || '★★★★☆',
-            history: item.history || item.sejarah || item.History || '',
-            ingredients: item.ingredients || item.bahan || item.Ingredients || '',
-            tips: item.tips || item.Tips || ''
-          };
-        });
+        // Normalisasi data (Handle jika backend kirim field huruf besar/kecil berbeda)
+        const normalizedMenuData = menuData.map((item: any) => ({
+          _id: item._id || item.id,
+          nama: item.nama || item.name || "",
+          kategori: item.kategori || item.category || "Makanan Utama",
+          harga: Number(item.harga || item.price || 0),
+          biaya: Number(item.biaya || item.cost || 0),
+          stok: Number(item.stok || item.stock || 0),
+          deskripsi: item.deskripsi || item.description || "",
+          gambar: item.gambar || item.image || "",
+          ratingStars: item.ratingStars || "★★★★☆",
+          history: item.history || "",
+          ingredients: item.ingredients || "",
+          tips: item.tips || ""
+        }));
         
         setMenus(normalizedMenuData);
       }
@@ -96,28 +91,29 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      if (!isBackground) showMessage("danger", "Gagal memuat data dari server");
+      if (!isBackground) showMessage("danger", "Gagal memuat data. Cek koneksi server.");
     } finally {
       if (!isBackground) setLoading(false);
     }
   };
 
-  // HANDLE SAVE (ADD / EDIT) 
+  //  HANDLE SAVE (ADD / EDIT) 
   const handleSaveMenu = async () => {
     if (!editingMenu) return;
 
-    // Validasi input
+    // 1. Validasi Input Wajib
     if (!editingMenu.nama || !editingMenu.kategori) {
-      showMessage("warning", "Mohon lengkapi Nama Menu dan Kategori!");
+      showMessage("warning", "Nama Menu dan Kategori wajib diisi!");
       return;
     }
 
     try {
-      const isEdit = !!editingMenu._id;
+      // 2. Tentukan Method: Jika punya _id valid, berarti PUT (Edit). Jika tidak, POST (Baru).
+      const isEdit = editingMenu._id && editingMenu._id.length > 0;
       const method = isEdit ? "PUT" : "POST";
       
-      const menuData = {
-        id: editingMenu._id,
+      // 3. Bersihkan Payload Data
+      const menuData: any = {
         nama: editingMenu.nama,
         kategori: editingMenu.kategori,
         harga: Number(editingMenu.harga),
@@ -131,13 +127,22 @@ export default function AdminDashboard() {
         tips: editingMenu.tips
       };
 
+      // Hanya sertakan ID jika ini adalah EDIT. 
+      // Jangan kirim ID kosong saat POST, karena bisa bikin error di MongoDB.
+      if (isEdit) {
+        menuData.id = editingMenu._id; 
+      }
+
+      console.log(`Mengirim data (${method}):`, menuData); // Debugging di Console Browser
+
+      // 4. Kirim Request
       const res = await fetch("/api/menus", {
         method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(menuData),
       });
 
-      // PERBAIKAN: Baca respon sebagai teks dulu
+      // 5. Baca response sebagai TEXT dulu (Anti Crash JSON)
       const responseText = await res.text();
 
       try {
@@ -145,16 +150,15 @@ export default function AdminDashboard() {
 
         if (res.ok) {
           showMessage("success", isEdit ? "✅ Menu berhasil diupdate!" : "✅ Menu berhasil ditambahkan!");
-          fetchData(true);
+          await fetchData(true); // Refresh data langsung
           setShowModal(false);
           setEditingMenu(null);
         } else {
-          throw new Error(jsonResponse.message || "Gagal menyimpan menu");
+          throw new Error(jsonResponse.message || "Gagal menyimpan (Server Error)");
         }
       } catch (jsonError) {
-        // Jika gagal parse JSON (misal server kirim HTML error karena URL kepanjangan)
-        console.error("Server Error (Raw):", responseText);
-        throw new Error("Gagal menyimpan. Cek URL gambar (jangan terlalu panjang) atau koneksi server.");
+        console.error("Server Response Raw:", responseText);
+        throw new Error("Gagal menyimpan. Respon server tidak valid (mungkin URL gambar terlalu panjang?).");
       }
 
     } catch (error: any) {
@@ -163,11 +167,19 @@ export default function AdminDashboard() {
     }
   };
 
-  //  HANDLE DELETE 
+  //  HANDLE DELETE
   const handleDeleteMenu = async (id: string) => {
-    if (!confirm("Yakin ingin menghapus menu ini?")) return;
+    if (!id) {
+      showMessage("danger", "❌ ID Menu tidak valid");
+      return;
+    }
+
+    if (!confirm("Yakin ingin menghapus menu ini secara permanen?")) return;
 
     try {
+      console.log("Menghapus ID:", id);
+
+      // Gunakan Query Parameter (?id=...)
       const res = await fetch(`/api/menus?id=${id}`, { 
         method: "DELETE",
       });
@@ -176,8 +188,9 @@ export default function AdminDashboard() {
 
       if (res.ok) {
         showMessage("success", "🗑 Menu berhasil dihapus!");
-        fetchData(true);
+        await fetchData(true); // Refresh data langsung
       } else {
+         // Coba parsing error
          try {
             const jsonRes = JSON.parse(responseText);
             throw new Error(jsonRes.message || "Gagal menghapus");
@@ -191,7 +204,7 @@ export default function AdminDashboard() {
     }
   };
 
-  //  HANDLE COMPLETE ORDER 
+  // HANDLE COMPLETE ORDER 
   const handleCompleteOrder = async (orderId: string) => {
     try {
       const res = await fetch(`/api/orders`, {
@@ -240,7 +253,7 @@ export default function AdminDashboard() {
     }}>
       <div className="container-fluid py-4">
         
-        {/* HEADER */}
+        {/* HEADER  */}
         <div className="d-flex justify-content-between align-items-center mb-4" style={{
           background: "rgba(255, 255, 255, 0.95)",
           padding: "1.5rem",
@@ -292,7 +305,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* ALERT  */}
+        {/* ALERT */}
         {message.text && (
           <div className={`alert alert-${message.type} alert-dismissible fade show`} role="alert">
             {message.text}
@@ -300,115 +313,23 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* --- STATS CARDS --- */}
+        {/* STATS CARDS */}
         <div className="row mb-4 g-3">
           <div className="col-md-3">
-            <div className="card border-0" style={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              borderRadius: "15px",
-              boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)",
-              color: "white"
-            }}>
+            <div className="card border-0" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", borderRadius: "15px", boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)", color: "white" }}>
               <div className="card-body p-4">
                 <div className="d-flex justify-content-between align-items-start mb-3">
                   <div style={{ fontSize: "2.5rem" }}>📋</div>
-                  <div style={{
-                    background: "rgba(255, 255, 255, 0.2)",
-                    padding: "0.3rem 0.8rem",
-                    borderRadius: "20px",
-                    fontSize: "0.8rem"
-                  }}>Menu</div>
+                  <div style={{ background: "rgba(255, 255, 255, 0.2)", padding: "0.3rem 0.8rem", borderRadius: "20px", fontSize: "0.8rem" }}>Menu</div>
                 </div>
                 <h2 className="fw-bold mb-1" style={{ fontSize: "2.5rem" }}>{menus.length}</h2>
                 <p className="mb-0 opacity-75">Total Menu</p>
               </div>
             </div>
           </div>
-          <div className="col-md-3">
-            <div className="card border-0" style={{
-              background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-              borderRadius: "15px",
-              boxShadow: "0 8px 32px rgba(240, 147, 251, 0.3)",
-              color: "white"
-            }}>
-              <div className="card-body p-4">
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <div style={{ fontSize: "2.5rem" }}>🛒</div>
-                  <div style={{
-                    background: "rgba(255, 255, 255, 0.2)",
-                    padding: "0.3rem 0.8rem",
-                    borderRadius: "20px",
-                    fontSize: "0.8rem"
-                  }}>Orders</div>
-                </div>
-                <h2 className="fw-bold mb-1" style={{ fontSize: "2.5rem" }}>{orders.length}</h2>
-                <p className="mb-0 opacity-75">Total Pesanan</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card border-0" style={{
-              background: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)",
-              borderRadius: "15px",
-              boxShadow: "0 8px 32px rgba(252, 182, 159, 0.3)",
-              color: "#333"
-            }}>
-              <div className="card-body p-4">
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <div style={{ fontSize: "2.5rem" }}>⏳</div>
-                  <div style={{
-                    background: "rgba(0, 0, 0, 0.1)",
-                    padding: "0.3rem 0.8rem",
-                    borderRadius: "20px",
-                    fontSize: "0.8rem"
-                  }}>Pending</div>
-                </div>
-                <h2 className="fw-bold mb-1" style={{ fontSize: "2.5rem" }}>
-                  {orders.filter(o => o.status === "pending").length}
-                </h2>
-                <p className="mb-0 opacity-75">Pesanan Pending</p>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-3">
-            <div className="card border-0" style={{
-              background: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
-              borderRadius: "15px",
-              boxShadow: "0 8px 32px rgba(168, 237, 234, 0.3)",
-              color: "#333"
-            }}>
-              <div className="card-body p-4">
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <div style={{ fontSize: "2.5rem" }}>💰</div>
-                  <div style={{
-                    background: "rgba(0, 0, 0, 0.1)",
-                    padding: "0.3rem 0.8rem",
-                    borderRadius: "20px",
-                    fontSize: "0.8rem"
-                  }}>Profit</div>
-                </div>
-                <h2 className="fw-bold mb-1" style={{ fontSize: "1.5rem" }}>
-                  {formatCurrency(
-                    orders
-                      .filter(o => o.status === "completed")
-                      .reduce((sum, order) => {
-                        const orderProfit = order.items.reduce((itemSum, item) => {
-                          const menuItem = menus.find(m => m._id === item.menuId || m.nama === item.name);
-                          const cost = menuItem?.biaya || 0;
-                          const profit = (item.price - cost) * item.qty;
-                          return itemSum + profit;
-                        }, 0);
-                        return sum + orderProfit;
-                      }, 0)
-                  )}
-                </h2>
-                <p className="mb-0 opacity-75">Total Profit</p>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* TABS */}
+        {/*  TABS  */}
         <div style={{
           background: "rgba(255, 255, 255, 0.95)",
           borderRadius: "15px",
@@ -421,9 +342,7 @@ export default function AdminDashboard() {
               <button
                 className={`nav-link border-0 ${activeTab === "menu" ? "" : ""}`}
                 style={{
-                  background: activeTab === "menu" 
-                    ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" 
-                    : "transparent",
+                  background: activeTab === "menu" ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : "transparent",
                   color: activeTab === "menu" ? "white" : "#666",
                   borderRadius: "10px",
                   padding: "0.8rem 2rem",
@@ -440,9 +359,7 @@ export default function AdminDashboard() {
               <button
                 className={`nav-link border-0 ${activeTab === "orders" ? "" : ""}`}
                 style={{
-                  background: activeTab === "orders" 
-                    ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" 
-                    : "transparent",
+                  background: activeTab === "orders" ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : "transparent",
                   color: activeTab === "orders" ? "white" : "#666",
                   borderRadius: "10px",
                   padding: "0.8rem 2rem",
@@ -457,7 +374,7 @@ export default function AdminDashboard() {
           </ul>
         </div>
 
-        {/* TAB CONTENT: MENU */}
+        {/*  TAB CONTENT: MENU  */}
         {activeTab === "menu" && (
           <div style={{
             background: "rgba(255, 255, 255, 0.95)",
@@ -504,10 +421,7 @@ export default function AdminDashboard() {
 
             <div className="table-responsive" style={{ borderRadius: "10px", overflow: "hidden" }}>
               <table className="table table-hover mb-0">
-                <thead style={{ 
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "white"
-                }}>
+                <thead style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white" }}>
                   <tr>
                     <th style={{ border: "none", padding: "1rem" }}>Gambar</th>
                     <th style={{ border: "none", padding: "1rem" }}>Nama</th>
@@ -528,86 +442,38 @@ export default function AdminDashboard() {
                     </tr>
                   ) : (
                     menus.map((menu) => (
-                      <tr key={menu._id} style={{ 
-                        transition: "all 0.3s",
-                        cursor: "pointer"
-                      }}>
+                      <tr key={menu._id} style={{ transition: "all 0.3s", cursor: "pointer" }}>
                         <td style={{ padding: "1rem", verticalAlign: "middle" }}>
                           {menu.gambar && (
                             <img
                               src={menu.gambar}
                               alt={menu.nama}
-                              style={{
-                                width: "70px",
-                                height: "70px",
-                                objectFit: "cover",
-                                borderRadius: "12px",
-                                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
-                              }}
-                              onError={(e) => {
-                                e.currentTarget.src = 'https://via.placeholder.com/70?text=No+Image';
-                              }}
+                              style={{ width: "70px", height: "70px", objectFit: "cover", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)" }}
+                              onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/70?text=No+Image'; }}
                             />
                           )}
                         </td>
                         <td className="fw-bold" style={{ padding: "1rem", verticalAlign: "middle" }}>{menu.nama}</td>
                         <td style={{ padding: "1rem", verticalAlign: "middle" }}>
-                          <span style={{
-                            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                            color: "white",
-                            padding: "0.3rem 0.8rem",
-                            borderRadius: "20px",
-                            fontSize: "0.85rem",
-                            fontWeight: "600"
-                          }}>{menu.kategori}</span>
+                          <span style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", padding: "0.3rem 0.8rem", borderRadius: "20px", fontSize: "0.85rem", fontWeight: "600" }}>{menu.kategori}</span>
                         </td>
-                        <td className="fw-bold" style={{ 
-                          padding: "1rem", 
-                          verticalAlign: "middle",
-                          color: "#667eea"
-                        }}>
-                          {formatCurrency(menu.harga)}
-                        </td>
-                        <td className="text-muted" style={{ padding: "1rem", verticalAlign: "middle" }}>
-                          {formatCurrency(menu.biaya)}
-                        </td>
+                        <td className="fw-bold" style={{ padding: "1rem", verticalAlign: "middle", color: "#667eea" }}>{formatCurrency(menu.harga)}</td>
+                        <td className="text-muted" style={{ padding: "1rem", verticalAlign: "middle" }}>{formatCurrency(menu.biaya)}</td>
                         <td style={{ padding: "1rem", verticalAlign: "middle" }}>
-                          <span style={{
-                            background: menu.stok > 50 ? "#d4edda" : "#fff3cd",
-                            color: menu.stok > 50 ? "#155724" : "#856404",
-                            padding: "0.3rem 0.8rem",
-                            borderRadius: "20px",
-                            fontSize: "0.85rem",
-                            fontWeight: "600"
-                          }}>{menu.stok || 0}</span>
+                          <span style={{ background: menu.stok > 50 ? "#d4edda" : "#fff3cd", color: menu.stok > 50 ? "#155724" : "#856404", padding: "0.3rem 0.8rem", borderRadius: "20px", fontSize: "0.85rem", fontWeight: "600" }}>{menu.stok || 0}</span>
                         </td>
                         <td style={{ padding: "1rem", verticalAlign: "middle" }}>
                           <div className="btn-group btn-group-sm">
                             <button
                               className="btn border-0"
-                              style={{
-                                background: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)",
-                                color: "#333",
-                                borderRadius: "8px 0 0 8px",
-                                fontWeight: "600",
-                                padding: "0.5rem 1rem"
-                              }}
-                              onClick={() => {
-                                setEditingMenu(menu);
-                                setShowModal(true);
-                              }}
+                              style={{ background: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)", color: "#333", borderRadius: "8px 0 0 8px", fontWeight: "600", padding: "0.5rem 1rem" }}
+                              onClick={() => { setEditingMenu(menu); setShowModal(true); }}
                             >
                               ✏ Edit
                             </button>
                             <button
                               className="btn border-0"
-                              style={{
-                                background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                                color: "white",
-                                borderRadius: "0 8px 8px 0",
-                                fontWeight: "600",
-                                padding: "0.5rem 1rem"
-                              }}
+                              style={{ background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", color: "white", borderRadius: "0 8px 8px 0", fontWeight: "600", padding: "0.5rem 1rem" }}
                               onClick={() => menu._id && handleDeleteMenu(menu._id)}
                             >
                               🗑
@@ -625,22 +491,15 @@ export default function AdminDashboard() {
 
         {/* TAB CONTENT: ORDERS */}
         {activeTab === "orders" && (
-          <div style={{
-            background: "rgba(255, 255, 255, 0.95)",
-            borderRadius: "15px",
-            padding: "2rem",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)"
-          }}>
+          <div style={{ background: "rgba(255, 255, 255, 0.95)", borderRadius: "15px", padding: "2rem", boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)" }}>
             <div className="mb-4">
               <h3 className="mb-1 fw-bold">Daftar Pesanan</h3>
               <p className="text-muted small mb-0">Kelola dan lacak semua pesanan</p>
             </div>
+            {/* Table Order */}
             <div className="table-responsive" style={{ borderRadius: "10px", overflow: "hidden" }}>
               <table className="table table-hover mb-0">
-                <thead style={{ 
-                  background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                  color: "white"
-                }}>
+                <thead style={{ background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", color: "white" }}>
                   <tr>
                     <th style={{ border: "none", padding: "1rem" }}>ID Order</th>
                     <th style={{ border: "none", padding: "1rem" }}>Items</th>
@@ -651,370 +510,94 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody style={{ background: "white" }}>
-                  {orders.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-5 text-muted">
-                        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📦</div>
-                        <p className="mb-0">Belum ada pesanan.</p>
-                      </td>
+                  {orders.map((order) => (
+                    <tr key={order._id} style={{ transition: "all 0.3s" }}>
+                      <td className="small text-muted" style={{ padding: "1rem", verticalAlign: "middle" }}>{order._id.substring(0, 8)}...</td>
+                      <td style={{ padding: "1rem", verticalAlign: "middle" }}>{order.items.map((item, idx) => (<div key={idx} className="small mb-1"><span className="fw-bold">{item.name}</span> <span style={{ background: "#e9ecef", padding: "0.1rem 0.5rem", borderRadius: "10px", marginLeft: "0.5rem", fontSize: "0.8rem" }}>x{item.qty}</span></div>))}</td>
+                      <td className="fw-bold" style={{ padding: "1rem", verticalAlign: "middle", color: "#f5576c" }}>{formatCurrency(order.total)}</td>
+                      <td style={{ padding: "1rem", verticalAlign: "middle" }}><span style={{ background: order.status === "completed" ? "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)" : "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)", color: "#333", padding: "0.4rem 1rem", borderRadius: "20px", fontSize: "0.85rem", fontWeight: "600", textTransform: "capitalize" }}>{order.status === "completed" ? "✅ Selesai" : "⏳ Pending"}</span></td>
+                      <td className="small" style={{ padding: "1rem", verticalAlign: "middle" }}>{new Date(order.createdAt).toLocaleString('id-ID')}</td>
+                      <td style={{ padding: "1rem", verticalAlign: "middle" }}>{order.status === "pending" && (<button className="btn border-0" style={{ background: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)", color: "#333", borderRadius: "8px", fontWeight: "600", padding: "0.5rem 1rem" }} onClick={() => handleCompleteOrder(order._id)}>✅ Complete</button>)}</td>
                     </tr>
-                  ) : (
-                    orders.map((order) => (
-                      <tr key={order._id} style={{ transition: "all 0.3s" }}>
-                        <td className="small text-muted" style={{ padding: "1rem", verticalAlign: "middle" }}>
-                          <code style={{
-                            background: "#f8f9fa",
-                            padding: "0.3rem 0.6rem",
-                            borderRadius: "6px",
-                            fontSize: "0.8rem"
-                          }}>{order._id.substring(0, 8)}...</code>
-                        </td>
-                        <td style={{ padding: "1rem", verticalAlign: "middle" }}>
-                          {order.items.map((item, idx) => (
-                            <div key={idx} className="small mb-1">
-                              <span className="fw-bold">{item.name}</span> 
-                              <span style={{
-                                background: "#e9ecef",
-                                padding: "0.1rem 0.5rem",
-                                borderRadius: "10px",
-                                marginLeft: "0.5rem",
-                                fontSize: "0.8rem"
-                              }}>x{item.qty}</span>
-                            </div>
-                          ))}
-                        </td>
-                        <td className="fw-bold" style={{ 
-                          padding: "1rem", 
-                          verticalAlign: "middle",
-                          color: "#f5576c"
-                        }}>
-                          {formatCurrency(order.total)}
-                        </td>
-                        <td style={{ padding: "1rem", verticalAlign: "middle" }}>
-                          <span style={{
-                            background: order.status === "completed" 
-                              ? "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)" 
-                              : "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)",
-                            color: "#333",
-                            padding: "0.4rem 1rem",
-                            borderRadius: "20px",
-                            fontSize: "0.85rem",
-                            fontWeight: "600",
-                            textTransform: "capitalize"
-                          }}>
-                            {order.status === "completed" ? "✅ Selesai" : "⏳ Pending"}
-                          </span>
-                        </td>
-                        <td className="small" style={{ padding: "1rem", verticalAlign: "middle" }}>
-                          {new Date(order.createdAt).toLocaleString('id-ID')}
-                        </td>
-                        <td style={{ padding: "1rem", verticalAlign: "middle" }}>
-                          {order.status === "pending" && (
-                            <button
-                              className="btn border-0"
-                              style={{
-                                background: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
-                                color: "#333",
-                                borderRadius: "8px",
-                                fontWeight: "600",
-                                padding: "0.5rem 1rem"
-                              }}
-                              onClick={() => handleCompleteOrder(order._id)}
-                            >
-                              ✅ Complete
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
-        {/* MODAL ADD/EDIT MENU */}
+        {/* MODAL ADD/EDIT MENU (Sudah diperbaiki dengan value={... || ""} untuk angka 0) */}
         {showModal && editingMenu && (
           <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
-              <div className="modal-content" style={{
-                borderRadius: "20px",
-                border: "none",
-                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
-              }}>
-                <div className="modal-header" style={{
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "white",
-                  borderRadius: "20px 20px 0 0",
-                  padding: "1.5rem"
-                }}>
-                  <h5 className="modal-title fw-bold">
-                    {editingMenu._id ? "✏ Edit Menu" : "➕ Tambah Menu Baru"}
-                  </h5>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={() => {
-                      setShowModal(false);
-                      setEditingMenu(null);
-                    }}
-                  ></button>
+              <div className="modal-content" style={{ borderRadius: "20px", border: "none", boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)" }}>
+                <div className="modal-header" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", borderRadius: "20px 20px 0 0", padding: "1.5rem" }}>
+                  <h5 className="modal-title fw-bold">{editingMenu._id ? "✏ Edit Menu" : "➕ Tambah Menu Baru"}</h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => { setShowModal(false); setEditingMenu(null); }}></button>
                 </div>
 
                 <div className="modal-body" style={{ padding: "2rem" }}>
                   <div className="row g-4">
                     <div className="col-md-6">
                       <label className="form-label fw-bold text-dark">Nama Menu *</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        value={editingMenu.nama}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, nama: e.target.value })}
-                      />
+                      <input type="text" className="form-control" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} value={editingMenu.nama} onChange={(e) => setEditingMenu({ ...editingMenu, nama: e.target.value })} />
                     </div>
-
                     <div className="col-md-6">
                       <label className="form-label fw-bold text-dark">Kategori *</label>
-                      <select
-                        className="form-select"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        value={editingMenu.kategori}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, kategori: e.target.value })}
-                      >
+                      <select className="form-select" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} value={editingMenu.kategori} onChange={(e) => setEditingMenu({ ...editingMenu, kategori: e.target.value })}>
                         <option value="Makanan Utama">Makanan Utama</option>
                         <option value="Camilan">Camilan</option>
                         <option value="Minuman">Minuman</option>
                         <option value="Penutup">Penutup</option>
                       </select>
                     </div>
-
-                    {/* PERBAIKAN: value={... || ""} agar 0 jadi string kosong */}
                     <div className="col-md-6">
                       <label className="form-label fw-bold text-dark">Harga Jual (Rp) *</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        value={editingMenu.harga || ""}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, harga: Number(e.target.value) })}
-                        min="0"
-                        step="1000"
-                        placeholder="0"
-                      />
-                      <small style={{
-                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        fontWeight: "600"
-                      }}>Preview: {formatCurrency(editingMenu.harga)}</small>
+                      <input type="number" className="form-control" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} value={editingMenu.harga || ""} onChange={(e) => setEditingMenu({ ...editingMenu, harga: Number(e.target.value) })} min="0" step="1000" placeholder="0" />
+                      <small style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: "600" }}>Preview: {formatCurrency(editingMenu.harga)}</small>
                     </div>
-
-                    {/* PERBAIKAN: value={... || ""} */}
                     <div className="col-md-6">
                       <label className="form-label fw-bold text-dark">Biaya Produksi (Rp)</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        value={editingMenu.biaya || ""}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, biaya: Number(e.target.value) })}
-                        min="0"
-                        step="1000"
-                        placeholder="0"
-                      />
-                      <small className="text-success fw-bold">
-                        💰 Profit/item: {formatCurrency(editingMenu.harga - editingMenu.biaya)}
-                      </small>
+                      <input type="number" className="form-control" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} value={editingMenu.biaya || ""} onChange={(e) => setEditingMenu({ ...editingMenu, biaya: Number(e.target.value) })} min="0" step="1000" placeholder="0" />
+                      <small className="text-success fw-bold">💰 Profit/item: {formatCurrency(editingMenu.harga - editingMenu.biaya)}</small>
                     </div>
-
-                    {/* PERBAIKAN: value={... || ""} */}
                     <div className="col-md-6">
                       <label className="form-label fw-bold text-dark">Stok</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        value={editingMenu.stok || ""}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, stok: Number(e.target.value) })}
-                        min="0"
-                        placeholder="0"
-                      />
+                      <input type="number" className="form-control" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} value={editingMenu.stok || ""} onChange={(e) => setEditingMenu({ ...editingMenu, stok: Number(e.target.value) })} min="0" placeholder="0" />
                     </div>
-
                     <div className="col-12">
                       <label className="form-label fw-bold text-dark">URL Gambar *</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        placeholder="https://..."
-                        value={editingMenu.gambar}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, gambar: e.target.value })}
-                      />
+                      <input type="text" className="form-control" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} placeholder="https://..." value={editingMenu.gambar} onChange={(e) => setEditingMenu({ ...editingMenu, gambar: e.target.value })} />
                     </div>
-
                     {editingMenu.gambar && (
                       <div className="col-12 text-center">
-                        <div style={{
-                          background: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)",
-                          borderRadius: "15px",
-                          padding: "1.5rem",
-                          display: "inline-block"
-                        }}>
-                          <img
-                            src={editingMenu.gambar}
-                            alt="Preview"
-                            style={{ 
-                              maxWidth: "250px", 
-                              maxHeight: "250px", 
-                              objectFit: "cover", 
-                              borderRadius: "12px",
-                              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)"
-                            }}
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://via.placeholder.com/250?text=Invalid+Image';
-                            }}
-                          />
+                        <div style={{ background: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)", borderRadius: "15px", padding: "1.5rem", display: "inline-block" }}>
+                          <img src={editingMenu.gambar} alt="Preview" style={{ maxWidth: "250px", maxHeight: "250px", objectFit: "cover", borderRadius: "12px", boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)" }} onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/250?text=Invalid+Image'; }} />
                         </div>
                       </div>
                     )}
-
                     <div className="col-12">
                       <label className="form-label fw-bold text-dark">Deskripsi *</label>
-                      <textarea
-                        className="form-control"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        rows={3}
-                        value={editingMenu.deskripsi}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, deskripsi: e.target.value })}
-                      />
+                      <textarea className="form-control" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} rows={3} value={editingMenu.deskripsi} onChange={(e) => setEditingMenu({ ...editingMenu, deskripsi: e.target.value })} />
                     </div>
-
                     <div className="col-12">
                       <label className="form-label fw-bold text-dark">Bahan-Bahan</label>
-                      <textarea
-                        className="form-control"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        rows={2}
-                        value={editingMenu.ingredients}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, ingredients: e.target.value })}
-                      />
+                      <textarea className="form-control" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} rows={2} value={editingMenu.ingredients} onChange={(e) => setEditingMenu({ ...editingMenu, ingredients: e.target.value })} />
                     </div>
-
                     <div className="col-12">
                       <label className="form-label fw-bold text-dark">Sejarah & Budaya</label>
-                      <textarea
-                        className="form-control"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        rows={3}
-                        value={editingMenu.history}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, history: e.target.value })}
-                      />
+                      <textarea className="form-control" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} rows={3} value={editingMenu.history} onChange={(e) => setEditingMenu({ ...editingMenu, history: e.target.value })} />
                     </div>
-
                     <div className="col-12">
                       <label className="form-label fw-bold text-dark">Tips Chef</label>
-                      <textarea
-                        className="form-control"
-                        style={{
-                          borderRadius: "10px",
-                          border: "2px solid #e9ecef",
-                          padding: "0.8rem",
-                          transition: "all 0.3s"
-                        }}
-                        rows={2}
-                        value={editingMenu.tips}
-                        onChange={(e) => setEditingMenu({ ...editingMenu, tips: e.target.value })}
-                      />
+                      <textarea className="form-control" style={{ borderRadius: "10px", border: "2px solid #e9ecef", padding: "0.8rem" }} rows={2} value={editingMenu.tips} onChange={(e) => setEditingMenu({ ...editingMenu, tips: e.target.value })} />
                     </div>
                   </div>
                 </div>
 
-                <div className="modal-footer" style={{
-                  borderTop: "2px solid #e9ecef",
-                  padding: "1.5rem"
-                }}>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{
-                      background: "#e9ecef",
-                      color: "#666",
-                      border: "none",
-                      borderRadius: "10px",
-                      padding: "0.8rem 1.5rem",
-                      fontWeight: "600"
-                    }}
-                    onClick={() => {
-                      setShowModal(false);
-                      setEditingMenu(null);
-                    }}
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    type="button" 
-                    className="btn"
-                    style={{
-                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "10px",
-                      padding: "0.8rem 1.5rem",
-                      fontWeight: "600",
-                      boxShadow: "0 4px 15px rgba(102, 126, 234, 0.3)"
-                    }}
-                    onClick={handleSaveMenu}
-                  >
-                    💾 Simpan
-                  </button>
+                <div className="modal-footer" style={{ borderTop: "2px solid #e9ecef", padding: "1.5rem" }}>
+                  <button type="button" className="btn" style={{ background: "#e9ecef", color: "#666", border: "none", borderRadius: "10px", padding: "0.8rem 1.5rem", fontWeight: "600" }} onClick={() => { setShowModal(false); setEditingMenu(null); }}>Batal</button>
+                  <button type="button" className="btn" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", border: "none", borderRadius: "10px", padding: "0.8rem 1.5rem", fontWeight: "600", boxShadow: "0 4px 15px rgba(102, 126, 234, 0.3)" }} onClick={handleSaveMenu}>💾 Simpan</button>
                 </div>
               </div>
             </div>

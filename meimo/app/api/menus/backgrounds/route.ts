@@ -12,7 +12,7 @@ export async function GET() {
 
   try {
     if (!mongoose.connections[0].readyState) {
-      await mongoose.connect(MONGO_URI);
+      await mongoose.connect(MONGODB_URI);
     }
 
     // Akses langsung ke database 'meimo', collection 'backgrounds'

@@ -156,6 +156,7 @@ export default function Home() {
 
   return (
     <div>
+      {/* NAVBAR (Langsung di sini agar tidak muncul di login page) */}
       <nav
         className={`navbar navbar-expand-lg fixed-top transition-all ${
           isScrolled ? "bg-white shadow-sm py-2" : "bg-transparent py-3"
@@ -233,6 +234,7 @@ export default function Home() {
         </div>
       </nav>
 
+      {/* HERO SECTION */}
       <header
         className="hero-section"
         style={{
@@ -255,6 +257,7 @@ export default function Home() {
         </div>
       </header>
 
+      {/* MENU GALLERY */}
       <section id="menu-gallery" className="py-5 bg-dark text-white">
         <div className="container text-center mb-5">
           <h2>Galeri Menu Spesial</h2>
@@ -298,6 +301,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* MODAL DETAIL MENU */}
       {showModal && selectedMenu && (
         <div
           className="modal fade show d-block"
@@ -306,8 +310,17 @@ export default function Home() {
         >
           <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content border-0 rounded-4 overflow-hidden">
-              <div className="modal-header bg-white border-0">
-                <h3 className="modal-title fw-bold text-dark">
+              
+              {/* MODAL HEADER - Added Back Button */}
+              <div className="modal-header bg-white border-0 align-items-center">
+                <button 
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm me-3 d-flex align-items-center gap-2"
+                  onClick={() => setShowModal(false)}
+                >
+                  <span>←</span> Kembali
+                </button>
+                <h3 className="modal-title fw-bold text-dark flex-grow-1">
                   {selectedMenu.name}
                 </h3>
                 <button
@@ -399,6 +412,17 @@ export default function Home() {
                         </div>
                       </form>
                     </div>
+
+                    {/* EXTRA BACK BUTTON FOR MOBILE */}
+                    <div className="d-block d-lg-none mt-4 pt-3 border-top">
+                        <button 
+                            className="btn btn-outline-dark w-100"
+                            onClick={() => setShowModal(false)}
+                        >
+                            Kembali ke Menu
+                        </button>
+                    </div>
+
                   </div>
                 </div>
               </div>

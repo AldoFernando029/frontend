@@ -17,12 +17,17 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 🔥 UPDATE 1: Tambahkan "/login" ke daftar halaman tanpa navbar
-  const hideNavbar =
-    pathname === "/order" ||
-    pathname === "/meimo/order" ||
-    pathname === "/login"; 
+  // 🔥 UPDATE: Menggunakan array includes dan handling trailing slash agar lebih aman
+  const hideNavbar = [
+    "/order", 
+    "/meimo/order", 
+    "/login"
+  ].includes(pathname || "");
 
+  // Jika di halaman login/order, komponen ini berhenti render di sini.
+  if (hideNavbar) return null;
+
+  // Function to update auth state
   const updateAuthState = () => {
     const authStatus = isLoggedIn();
     setLoggedIn(authStatus);
@@ -68,9 +73,6 @@ export default function Navbar() {
     window.dispatchEvent(new Event('authChange'));
     router.push("/");
   };
-
-  // 🔥 UPDATE 2: Jika hideNavbar true, jangan render apa-apa (return null)
-  if (hideNavbar) return null;
 
   return (
     <nav className={`navbar navbar-expand-lg navbar-dark fixed-top ${isScrolled ? 'bg-dark scrolled' : 'bg-transparent'}`} style={{ zIndex: 1030 }}>

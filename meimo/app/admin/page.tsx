@@ -42,22 +42,18 @@ export default function AdminDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  
-  // LOGIC AUTO REFRESH
-
+  //  LOGIC AUTO REFRESH 
   useEffect(() => {
     fetchData(false); // false = pakai loading spinner
 
     const intervalId = setInterval(() => {
-      fetchData(true); // true = background
+      fetchData(true); // true = background refresh
     }, 5000);
 
     return () => clearInterval(intervalId);
   }, []);
 
-  
-  // FETCH DATA
-
+  // FETCH DATA 
   const fetchData = async (isBackground = false) => {
     try {
       if (!isBackground) setLoading(true);
@@ -70,6 +66,7 @@ export default function AdminDashboard() {
       if (menuRes.ok) {
         const menuData = await menuRes.json();
         
+        // Normalisasi data agar aman dari perbedaan penamaan di backend
         const normalizedMenuData = menuData.map((item: any) => {
           const priceValue = item.harga || item.price || item.Price || 0;
           const costValue = item.biaya || item.cost || item.Cost || 0;
@@ -105,24 +102,22 @@ export default function AdminDashboard() {
     }
   };
 
-  // --- PERBAIKAN UTAMA PADA FUNGSI SAVE ---
+  // HANDLE SAVE (ADD / EDIT) 
   const handleSaveMenu = async () => {
     if (!editingMenu) return;
 
-    // Validasi sederhana
+    // Validasi input
     if (!editingMenu.nama || !editingMenu.kategori) {
       showMessage("warning", "Mohon lengkapi Nama Menu dan Kategori!");
       return;
     }
 
     try {
-      // Tentukan Method: Jika punya _id berarti EDIT (PUT), jika tidak berarti BARU (POST)
       const isEdit = !!editingMenu._id;
       const method = isEdit ? "PUT" : "POST";
       
-      // Siapkan payload data yang bersih (pastikan angka adalah number)
       const menuData = {
-        id: editingMenu._id, // Kirim ID jika edit (opsional tergantung backend, tapi aman disertakan)
+        id: editingMenu._id,
         nama: editingMenu.nama,
         kategori: editingMenu.kategori,
         harga: Number(editingMenu.harga),
@@ -136,28 +131,39 @@ export default function AdminDashboard() {
         tips: editingMenu.tips
       };
 
-      // Tetap gunakan path /api/menus sesuai permintaan (Backend harus handle PUT/POST di route ini)
       const res = await fetch("/api/menus", {
         method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(menuData),
       });
 
-      if (res.ok) {
-        showMessage("success", isEdit ? "✅ Menu berhasil diupdate!" : "✅ Menu berhasil ditambahkan!");
-        fetchData(true); // Refresh data
-        setShowModal(false);
-        setEditingMenu(null);
-      } else {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Gagal menyimpan menu");
+      // PERBAIKAN: Baca respon sebagai teks dulu
+      const responseText = await res.text();
+
+      try {
+        const jsonResponse = JSON.parse(responseText);
+
+        if (res.ok) {
+          showMessage("success", isEdit ? "✅ Menu berhasil diupdate!" : "✅ Menu berhasil ditambahkan!");
+          fetchData(true);
+          setShowModal(false);
+          setEditingMenu(null);
+        } else {
+          throw new Error(jsonResponse.message || "Gagal menyimpan menu");
+        }
+      } catch (jsonError) {
+        // Jika gagal parse JSON (misal server kirim HTML error karena URL kepanjangan)
+        console.error("Server Error (Raw):", responseText);
+        throw new Error("Gagal menyimpan. Cek URL gambar (jangan terlalu panjang) atau koneksi server.");
       }
-    } catch (error) {
+
+    } catch (error: any) {
       console.error("Error saving menu:", error);
-      showMessage("danger", `❌ Gagal menyimpan menu: ${error}`);
+      showMessage("danger", `❌ Gagal: ${error.message}`);
     }
   };
 
+  //  HANDLE DELETE 
   const handleDeleteMenu = async (id: string) => {
     if (!confirm("Yakin ingin menghapus menu ini?")) return;
 
@@ -165,16 +171,27 @@ export default function AdminDashboard() {
       const res = await fetch(`/api/menus?id=${id}`, { 
         method: "DELETE",
       });
+
+      const responseText = await res.text();
+
       if (res.ok) {
         showMessage("success", "🗑 Menu berhasil dihapus!");
         fetchData(true);
+      } else {
+         try {
+            const jsonRes = JSON.parse(responseText);
+            throw new Error(jsonRes.message || "Gagal menghapus");
+         } catch(e) {
+             throw new Error("Gagal menghapus menu (Server Error)");
+         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting menu:", error);
-      showMessage("danger", "❌ Gagal menghapus menu");
+      showMessage("danger", `❌ ${error.message}`);
     }
   };
 
+  //  HANDLE COMPLETE ORDER 
   const handleCompleteOrder = async (orderId: string) => {
     try {
       const res = await fetch(`/api/orders`, {
@@ -222,7 +239,8 @@ export default function AdminDashboard() {
       background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
     }}>
       <div className="container-fluid py-4">
-        {/* Header */}
+        
+        {/* HEADER */}
         <div className="d-flex justify-content-between align-items-center mb-4" style={{
           background: "rgba(255, 255, 255, 0.95)",
           padding: "1.5rem",
@@ -274,7 +292,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Alert Message */}
+        {/* ALERT  */}
         {message.text && (
           <div className={`alert alert-${message.type} alert-dismissible fade show`} role="alert">
             {message.text}
@@ -282,7 +300,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Stats Cards */}
+        {/* --- STATS CARDS --- */}
         <div className="row mb-4 g-3">
           <div className="col-md-3">
             <div className="card border-0" style={{
@@ -390,7 +408,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* TABS */}
         <div style={{
           background: "rgba(255, 255, 255, 0.95)",
           borderRadius: "15px",
@@ -439,7 +457,7 @@ export default function AdminDashboard() {
           </ul>
         </div>
 
-        {/* Menu Tab */}
+        {/* TAB CONTENT: MENU */}
         {activeTab === "menu" && (
           <div style={{
             background: "rgba(255, 255, 255, 0.95)",
@@ -469,7 +487,7 @@ export default function AdminDashboard() {
                     kategori: "Makanan Utama",
                     harga: 0,
                     biaya: 0,
-                    stok: 10, // Default stok di set 10
+                    stok: 0, 
                     deskripsi: "",
                     gambar: "",
                     ratingStars: "★★★★☆",
@@ -605,7 +623,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Orders Tab */}
+        {/* TAB CONTENT: ORDERS */}
         {activeTab === "orders" && (
           <div style={{
             background: "rgba(255, 255, 255, 0.95)",
@@ -716,7 +734,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Modal Add/Edit Menu */}
+        {/* MODAL ADD/EDIT MENU */}
         {showModal && editingMenu && (
           <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
             <div className="modal-dialog modal-lg modal-dialog-scrollable">
@@ -782,6 +800,7 @@ export default function AdminDashboard() {
                       </select>
                     </div>
 
+                    {/* PERBAIKAN: value={... || ""} agar 0 jadi string kosong */}
                     <div className="col-md-6">
                       <label className="form-label fw-bold text-dark">Harga Jual (Rp) *</label>
                       <input
@@ -793,7 +812,7 @@ export default function AdminDashboard() {
                           padding: "0.8rem",
                           transition: "all 0.3s"
                         }}
-                        value={editingMenu.harga}
+                        value={editingMenu.harga || ""}
                         onChange={(e) => setEditingMenu({ ...editingMenu, harga: Number(e.target.value) })}
                         min="0"
                         step="1000"
@@ -807,6 +826,7 @@ export default function AdminDashboard() {
                       }}>Preview: {formatCurrency(editingMenu.harga)}</small>
                     </div>
 
+                    {/* PERBAIKAN: value={... || ""} */}
                     <div className="col-md-6">
                       <label className="form-label fw-bold text-dark">Biaya Produksi (Rp)</label>
                       <input
@@ -818,7 +838,7 @@ export default function AdminDashboard() {
                           padding: "0.8rem",
                           transition: "all 0.3s"
                         }}
-                        value={editingMenu.biaya}
+                        value={editingMenu.biaya || ""}
                         onChange={(e) => setEditingMenu({ ...editingMenu, biaya: Number(e.target.value) })}
                         min="0"
                         step="1000"
@@ -829,6 +849,7 @@ export default function AdminDashboard() {
                       </small>
                     </div>
 
+                    {/* PERBAIKAN: value={... || ""} */}
                     <div className="col-md-6">
                       <label className="form-label fw-bold text-dark">Stok</label>
                       <input
@@ -840,7 +861,7 @@ export default function AdminDashboard() {
                           padding: "0.8rem",
                           transition: "all 0.3s"
                         }}
-                        value={editingMenu.stok}
+                        value={editingMenu.stok || ""}
                         onChange={(e) => setEditingMenu({ ...editingMenu, stok: Number(e.target.value) })}
                         min="0"
                         placeholder="0"

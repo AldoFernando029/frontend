@@ -5,9 +5,7 @@ export const dynamic = 'force-dynamic';
 
 const MONGO_URI = process.env.MONGODB_URI;
 
-/**
- * Fungsi koneksi database yang lebih sederhana dan anti-cache error.
- */
+/*Fungsi koneksi database yang lebih sederhana dan anti-cache error.*/
 const connectDB = async () => {
   if (mongoose.connections[0].readyState) return true;
   

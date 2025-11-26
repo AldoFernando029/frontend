@@ -81,9 +81,9 @@ export default function OrderPage() {
   };
 
   
-  // ===============================================
-  // ✨ FETCH MENU DARI DATABASE (SEKALI SAJA SAAT LOAD)
-  // ===============================================
+
+  //  FETCH MENU DARI DATABASE (SEKALI SAJA SAAT LOAD)
+  
   useEffect(() => {
     async function fetchMenuFromDB() {
       try {
@@ -124,9 +124,9 @@ export default function OrderPage() {
     fetchMenuFromDB();
   }, []);
 
-  // ===============================================
-  // ✨ FUNGSI KIRIM PESANAN (POST KE MONGODB)
-  // ===============================================
+
+  //  FUNGSI KIRIM PESANAN (POST KE MONGODB)
+ 
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0) {
       alert("Keranjang kosong!");
